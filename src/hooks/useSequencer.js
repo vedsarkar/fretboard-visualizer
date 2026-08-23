@@ -45,6 +45,7 @@ export function useSequencer(state, onNote) {
     state.customIntervals,
     state.tuningId,
     state.transpose,
+    state.extraStrings,
     state.fretCount,
     state.octaves,
     state.groupLength,

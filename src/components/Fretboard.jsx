@@ -1,8 +1,6 @@
 import { forwardRef, memo, useMemo } from 'react';
-import { DEGREE_LABEL, DOUBLE_INLAY_FRETS, INLAY_FRETS, noteName, noteNameOctave } from '../lib/theory.js';
+import { DEGREE_LABEL, DOUBLE_INLAY_FRETS, INLAY_FRETS, noteName, noteNameOctave, pitchClass } from '../lib/theory.js';
 import { COLORS, FONT, NOTE_COLOR, computeLayout } from '../lib/layout.js';
-
-const pc = (midi) => ((midi % 12) + 12) % 12;
 
 /** One note dot. Memoised so playback highlights only re-render what changed. */
 const NoteMarker = memo(function NoteMarker({ note, radius, flashId, onSelect, onSpotlight }) {
@@ -71,7 +69,7 @@ export const Fretboard = forwardRef(function Fretboard(
     for (let i = 0; i < stringCount; i += 1) {
       for (let fret = 0; fret <= fretCount; fret += 1) {
         const midi = strings[i] + fret;
-        const entry = view.pitches.get(pc(midi));
+        const entry = view.pitches.get(pitchClass(midi));
         if (!entry) continue;
         if (!showAllDegrees && !view.degreeFilter.includes(entry.degree)) continue;
         const key = `${i}:${fret}`;
@@ -86,7 +84,7 @@ export const Fretboard = forwardRef(function Fretboard(
           label: showDegrees ? DEGREE_LABEL[entry.semitones] : noteName(midi, flats),
           isRoot: entry.semitones === 0,
           dimmed:
-            !stringEnabled[i] || (view.spotlight !== null && view.spotlight !== pc(midi)),
+            !stringEnabled[i] || (view.spotlight !== null && view.spotlight !== pitchClass(midi)),
         });
       }
     }

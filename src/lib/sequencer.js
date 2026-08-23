@@ -116,8 +116,8 @@ export class Sequencer {
     this.metronome = false;
     this.onNote = () => {};
     this.onStop = () => {};
-    this.onCountIn = () => {};
     this._timer = null;
+    this._tailTimer = null;
     this._frame = null;
     this._queue = [];
   }
@@ -141,9 +141,7 @@ export class Sequencer {
 
     if (this.countIn) {
       for (let i = 0; i < 4; i += 1) {
-        const at = this._nextNoteTime + i * beat;
-        this.audio.click(at, i === 0);
-        this._queue.push({ type: 'count', value: 4 - i, time: at });
+        this.audio.click(this._nextNoteTime + i * beat, i === 0);
       }
       this._nextNoteTime += 4 * beat;
     }
@@ -158,17 +156,14 @@ export class Sequencer {
     if (!this.playing) return;
     this.playing = false;
     window.clearInterval(this._timer);
+    window.clearTimeout(this._tailTimer);
     window.cancelAnimationFrame(this._frame);
     this._timer = null;
+    this._tailTimer = null;
     this._frame = null;
     this._queue = [];
     this.audio.stopAll();
     this.onStop();
-  }
-
-  toggle() {
-    if (this.playing) this.stop();
-    else this.start();
   }
 
   _schedule() {
@@ -184,7 +179,7 @@ export class Sequencer {
           window.clearInterval(this._timer);
           this._timer = null;
           const remaining = Math.max(0, (endsAt - this.audio.time) * 1000);
-          window.setTimeout(() => this.stop(), remaining + 400);
+          this._tailTimer = window.setTimeout(() => this.stop(), remaining + 400);
           return;
         }
         this._index = 0;
@@ -192,7 +187,7 @@ export class Sequencer {
 
       const midi = this.notes[this._index];
       this.audio.play(midi, this._nextNoteTime, 0.62, this._noteDuration * 1.9);
-      this._queue.push({ type: 'note', midi, index: this._index, time: this._nextNoteTime });
+      this._queue.push({ midi, index: this._index, time: this._nextNoteTime });
 
       if (this.metronome) {
         while (this._nextBeatTime <= this._nextNoteTime + 1e-6) {
@@ -211,9 +206,7 @@ export class Sequencer {
       if (!this.playing) return;
       const now = this.audio.time;
       while (this._queue.length && this._queue[0].time <= now) {
-        const event = this._queue.shift();
-        if (event.type === 'note') this.onNote(event);
-        else this.onCountIn(event.value);
+        this.onNote(this._queue.shift());
       }
       this._frame = window.requestAnimationFrame(step);
     };

@@ -159,9 +159,8 @@ export function reducer(state, action) {
       return { ...state, spotlight: state.spotlight === action.pc ? null : action.pc };
 
     case 'cycle': {
-      const { field, values, step = 1 } = action;
-      const index = values.indexOf(state[field]);
-      const value = values[(index + step + values.length) % values.length];
+      const { field, values } = action;
+      const value = values[(values.indexOf(state[field]) + 1) % values.length];
       const patch = { [field]: value };
       if (field === 'groupLength') patch.permIndex = 0;
       return { ...state, ...patch };
@@ -284,5 +283,7 @@ export function loadState() {
   }
   if (!findTuning(patch.tuningId)) patch.tuningId = 'standard';
   if (!findScale(patch.scaleId)) patch.scaleId = 'ionian';
+  // The transport labels its button by looking this id up, so it has to resolve.
+  if (patch.direction && !DIRECTIONS.some(([id]) => id === patch.direction)) patch.direction = 'up';
   return patch;
 }

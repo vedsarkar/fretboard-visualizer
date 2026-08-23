@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { PITCH_FLAT, PITCH_SHARP, noteName } from '@/lib/theory.js';
+import { PITCH_FLAT, PITCH_SHARP, noteName, pitchClass } from '@/lib/theory.js';
 import { svgToPng } from '@/lib/layout.js';
 import { audio } from '@/lib/audio.js';
 import {
@@ -123,7 +123,7 @@ export default function App() {
   );
 
   const onSpotlight = useCallback((note) => {
-    dispatch({ type: 'toggleSpotlight', pc: ((note.midi % 12) + 12) % 12 });
+    dispatch({ type: 'toggleSpotlight', pc: pitchClass(note.midi) });
   }, []);
 
   /* Space toggles playback unless the user is typing. */

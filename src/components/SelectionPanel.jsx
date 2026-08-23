@@ -19,6 +19,7 @@ import {
   INTERVAL_LABEL,
   INTERVAL_NAME,
   SCALE_GROUPS,
+  findChord,
   findScale,
 } from '@/lib/theory.js';
 
@@ -109,7 +110,7 @@ function Chords({ state, dispatch }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" variant={extendedActive ? 'default' : 'outline'} data-testid="chord-more">
-            {extendedActive ? findChordName(state.chordId) : extended.label}
+            {extendedActive ? findChord(state.chordId).name : extended.label}
             <ChevronDown />
           </Button>
         </DropdownMenuTrigger>
@@ -134,9 +135,6 @@ function Chords({ state, dispatch }) {
     </div>
   );
 }
-
-const findChordName = (id) =>
-  CHORD_GROUPS.flatMap((g) => g.chords).find((c) => c.id === id)?.name ?? 'More';
 
 export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
   const enabledStrings = Array.from({ length: stringCount }, (_, i) => i).filter(

@@ -40,10 +40,6 @@ export class AudioEngine {
     return this.ensure().currentTime;
   }
 
-  setVolume(value) {
-    if (this.master) this.master.gain.value = value;
-  }
-
   buffer(midi) {
     const cached = this.buffers.get(midi);
     if (cached) return cached;
@@ -116,12 +112,6 @@ export class AudioEngine {
     this.active.add(voice);
     source.onended = () => this.active.delete(voice);
     return voice;
-  }
-
-  /** Strum a chord with a small delay between strings. */
-  strum(midiNotes, spread = 0.035, gain = 0.55) {
-    const start = this.time + 0.02;
-    midiNotes.forEach((midi, i) => this.play(midi, start + i * spread, gain));
   }
 
   click(when = 0, accent = false) {

@@ -31,7 +31,6 @@
       const tick = () => new Promise((resolve) => setTimeout(resolve, 30));
       const root = document.getElementById('mount');
       const byId = (id, scope = root) => scope.querySelector(`[data-testid="${id}"]`);
-      const allById = (id, scope = root) => [...scope.querySelectorAll(`[data-testid="${id}"]`)];
       const inGroup = (id) => [...byId(id).querySelectorAll('button')];
       const byText = (text, scope = root) =>
         [...scope.querySelectorAll('button')].find((b) => b.textContent.trim() === text);
@@ -54,6 +53,7 @@
       const markers = () => root.querySelectorAll('.fb-note');
       const dotLabels = () => [...root.querySelectorAll('.fb-note text')].map((t) => t.textContent);
       const readout = (id) => byId(id).textContent.trim();
+      const seqCount = () => Number(/(\d+) notes/.exec(byId('sequence-display').textContent)?.[1] ?? 0);
       const openLabelsIn = (svg) =>
         [...svg.querySelectorAll('text')]
           .filter((t) => /^[A-G]#?\d$/.test(t.textContent))
@@ -247,9 +247,16 @@
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',
           openLabelsIn(board()).join(' '));
+        // A one-octave pool only shifts down when a lower string arrives. Four
+        // octaves overruns the top of the neck, so the new range adds notes.
+        for (let i = 0; i < 3; i += 1) await click(byId('oct-cycle'));
+        const sixStringNotes = seqCount();
         await click(byId('strings-inc'));
         log('seventh string adds a low B1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1',
           openLabelsIn(board()).join(' '));
+        log('the sequence follows the added string', seqCount() > sixStringNotes,
+          `${sixStringNotes} -> ${seqCount()}`);
+        await click(byId('oct-cycle'));
         await click(byId('strings-inc'));
         log('eighth string adds a low F#1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1 F#1',
           openLabelsIn(board()).join(' '));
@@ -346,6 +353,14 @@
         log('opted-in field persists', S.loadState().tempo === 145);
         S.saveState({ ...S.initialState, tempo: 145 });
         log('opted-out field does not persist', S.loadState().tempo === undefined);
+        S.saveState({ ...S.initialState, direction: 'downup', persist: { ...S.initialState.persist, direction: true } });
+        log('opted-in direction persists', S.loadState().direction === 'downup', S.loadState().direction);
+        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({ persist: { direction: true }, direction: 'sideways' }));
+        log('unknown direction falls back to up', S.loadState().direction === 'up', S.loadState().direction);
+        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({ defaults: { instrument: 'gone', root: 0, scale: 'gone' } }));
+        const stale = S.loadState();
+        log('unknown tuning and scale fall back', stale.tuningId === 'standard' && stale.scaleId === 'ionian',
+          `${stale.tuningId} / ${stale.scaleId}`);
         localStorage.clear();
       } catch (error) {
         log('uncaught error', false, `${error && error.message} | ${error && error.stack}`);

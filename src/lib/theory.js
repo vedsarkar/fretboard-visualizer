@@ -247,9 +247,6 @@ export const findTuning = (id) => ALL_TUNINGS.find((t) => t.id === id);
 export const findScale = (id) => ALL_SCALES.find((s) => s.id === id);
 export const findChord = (id) => ALL_CHORDS.find((c) => c.id === id);
 
-/** Group label shown on the collapsed scale dropdown button. */
-export const scaleGroupOf = (id) => SCALE_GROUPS.find((g) => g.scales.some((s) => s.id === id));
-
 /** MIDI number of every open string, lowest string position first. */
 export const tuningMidi = (t, transpose = 0) => t.notes.map((n) => nameToMidi(n) + transpose);
 
