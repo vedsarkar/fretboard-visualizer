@@ -9,10 +9,29 @@ export const PITCH_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A',
 /** Degree label for a semitone distance above the root. */
 export const DEGREE_LABEL = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'];
 
-/** Labels for the custom-interval toggles. */
+/**
+ * Labels for the custom-interval toggles. Only the perfect/minor/major spelling
+ * is shown; the tritone has no such name, so semitone 6 stays diminished.
+ */
 export const INTERVAL_LABEL = [
-  'P1', 'm2/A1', 'M2/d3', 'm3/A2', 'M3/d4', 'P4/A3',
-  'd5/A4', 'P5/d6', 'm6/A5', 'M6/d7', 'm7/A6', 'M7/d8',
+  'P1', 'm2', 'M2', 'm3', 'M3', 'P4',
+  'd5', 'P5', 'm6', 'M6', 'm7', 'M7',
+];
+
+/** Spoken names for the toggles above, carrying the enharmonic they drop. */
+export const INTERVAL_NAME = [
+  'perfect unison',
+  'minor second / augmented unison',
+  'major second / diminished third',
+  'minor third / augmented second',
+  'major third / diminished fourth',
+  'perfect fourth / augmented third',
+  'diminished fifth / augmented fourth (tritone)',
+  'perfect fifth / diminished sixth',
+  'minor sixth / augmented fifth',
+  'major sixth / diminished seventh',
+  'minor seventh / augmented sixth',
+  'major seventh / diminished octave',
 ];
 
 const LETTER_SEMITONE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -233,6 +252,51 @@ export const scaleGroupOf = (id) => SCALE_GROUPS.find((g) => g.scales.some((s) =
 
 /** MIDI number of every open string, lowest string position first. */
 export const tuningMidi = (t, transpose = 0) => t.notes.map((n) => nameToMidi(n) + transpose);
+
+/** Most strings on any tuning we ship, extras included. */
+export const MAX_STRINGS = 8;
+
+const PERFECT_FOURTH = 5;
+const LOWEST_MIDI = 12; // C0 — below this the pitch is more rumble than note.
+
+/**
+ * The interval an extra string should sit below the current lowest one: whichever
+ * gap the tuning already uses most, with ties going to the perfect fourth. For
+ * guitar and bass tunings that works out to a fourth, which is exactly how real
+ * extended-range instruments are strung (E2 -> B1 -> F#1).
+ */
+function dominantGap(midis) {
+  const counts = new Map();
+  for (let i = 1; i < midis.length; i += 1) {
+    const gap = midis[i] - midis[i - 1];
+    if (gap > 0) counts.set(gap, (counts.get(gap) ?? 0) + 1);
+  }
+  let best = PERFECT_FOURTH;
+  let bestCount = 0;
+  for (const [gap, count] of counts) {
+    if (count > bestCount || (count === bestCount && gap === PERFECT_FOURTH)) {
+      best = gap;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/** Open strings for a tuning plus `extra` added below its lowest string. */
+export function extendedTuningMidi(t, transpose = 0, extra = 0) {
+  const base = tuningMidi(t, transpose);
+  if (extra <= 0) return base;
+
+  const step = dominantGap(base);
+  const added = [];
+  let pitch = Math.min(...base);
+  for (let i = 0; i < extra; i += 1) {
+    pitch -= step;
+    if (pitch < LOWEST_MIDI) break;
+    added.unshift(pitch);
+  }
+  return [...added, ...base];
+}
 
 /** Frets whose inlay markers are drawn, with 12/24 doubled. */
 export const INLAY_FRETS = [3, 5, 7, 9, 15, 17, 19, 21];

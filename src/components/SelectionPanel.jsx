@@ -1,11 +1,15 @@
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Cap, Cluster, Hint, MUTABLE, PICKED, PICKED_SOLID } from './Ui.jsx';
@@ -13,61 +17,65 @@ import {
   CHORD_GROUPS,
   DEGREE_LABEL,
   INTERVAL_LABEL,
+  INTERVAL_NAME,
   SCALE_GROUPS,
   findScale,
-  scaleGroupOf,
 } from '@/lib/theory.js';
 
 const summary = (intervals) => intervals.map((i) => DEGREE_LABEL[i]).join(' ');
 
-function ScaleGroups({ state, dispatch }) {
-  const activeGroup = state.useCustom ? null : scaleGroupOf(state.scaleId);
+/** Stands in for a scale id while the intervals are hand-picked. */
+const CUSTOM = 'custom';
 
+function ScaleGroups({ state, dispatch }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {SCALE_GROUPS.map((group) => {
-        const isActive = activeGroup?.id === group.id;
-        return (
-          <DropdownMenu key={group.id}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant={isActive ? 'default' : 'outline'}
-                data-testid={`scale-group-${group.id}`}
-              >
-                {isActive ? findScale(state.scaleId).name : group.label}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto">
-              <DropdownMenuRadioGroup
-                value={state.useCustom ? '' : state.scaleId}
-                onValueChange={(id) => dispatch({ type: 'selectScale', id })}
-              >
-                {group.scales.map((scale) => (
-                  <DropdownMenuRadioItem key={scale.id} value={scale.id}>
-                    <span className="flex-1">{scale.name}</span>
-                    <span className="ml-3 text-xs tabular-nums text-muted-foreground">
-                      {summary(scale.intervals)}
-                    </span>
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      })}
+      <Cap>Scale</Cap>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="outline" data-testid="scale-select">
+            {state.useCustom ? 'Custom' : (findScale(state.scaleId)?.name ?? 'Scale')}
+            <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="flex max-h-[70vh] w-auto min-w-72 overflow-hidden">
+          {/* Row layout stretches the scroll area, so its viewport gets a height to scroll within. */}
+          <ScrollArea className="flex-1">
+            <DropdownMenuRadioGroup
+              value={state.useCustom ? CUSTOM : state.scaleId}
+              onValueChange={(id) =>
+                dispatch(id === CUSTOM ? { type: 'enableCustom' } : { type: 'selectScale', id })
+              }
+            >
+              {SCALE_GROUPS.map((group, index) => (
+                <DropdownMenuGroup key={group.id}>
+                  {index > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                  {group.scales.map((scale) => (
+                    <DropdownMenuRadioItem key={scale.id} value={scale.id}>
+                      <span className="flex-1">{scale.name}</span>
+                      <span className="ml-3 text-xs tabular-nums text-muted-foreground">
+                        {summary(scale.intervals)}
+                      </span>
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuGroup>
+              ))}
 
-      <Hint label="Build your own set from the intervals below">
-        <Button
-          size="sm"
-          variant={state.useCustom ? 'default' : 'outline'}
-          data-testid="custom-btn"
-          onClick={() => dispatch({ type: 'enableCustom' })}
-        >
-          Custom
-        </Button>
-      </Hint>
+              <DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Custom</DropdownMenuLabel>
+                <DropdownMenuRadioItem value={CUSTOM} data-testid="custom-btn">
+                  <span className="flex-1">Build your own set</span>
+                  <span className="ml-3 text-xs text-muted-foreground">
+                    from the intervals below
+                  </span>
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+            </DropdownMenuRadioGroup>
+          </ScrollArea>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -105,20 +113,22 @@ function Chords({ state, dispatch }) {
             <ChevronDown />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuRadioGroup
-            value={state.useCustom ? '' : state.chordId}
-            onValueChange={(id) => dispatch({ type: 'selectChord', id })}
-          >
-            {extended.chords.map((chord) => (
-              <DropdownMenuRadioItem key={chord.id} value={chord.id}>
-                <span className="flex-1">{chord.name}</span>
-                <span className="ml-3 text-xs tabular-nums text-muted-foreground">
-                  {summary(chord.intervals)}
-                </span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
+        <DropdownMenuContent align="start" className="flex w-auto min-w-72 overflow-hidden">
+          <ScrollArea className="flex-1">
+            <DropdownMenuRadioGroup
+              value={state.useCustom ? '' : state.chordId}
+              onValueChange={(id) => dispatch({ type: 'selectChord', id })}
+            >
+              {extended.chords.map((chord) => (
+                <DropdownMenuRadioItem key={chord.id} value={chord.id}>
+                  <span className="flex-1">{chord.name}</span>
+                  <span className="ml-3 text-xs tabular-nums text-muted-foreground">
+                    {summary(chord.intervals)}
+                  </span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </ScrollArea>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -150,15 +160,16 @@ export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
               }
               data-testid="interval-group"
             >
-              {INTERVAL_LABEL.map((name, semitones) => (
-                <ToggleGroupItem
-                  key={name}
-                  value={String(semitones)}
-                  aria-label={name}
-                  className={PICKED}
-                >
-                  {name}
-                </ToggleGroupItem>
+              {INTERVAL_LABEL.map((label, semitones) => (
+                <Hint key={label} label={INTERVAL_NAME[semitones]}>
+                  <ToggleGroupItem
+                    value={String(semitones)}
+                    aria-label={INTERVAL_NAME[semitones]}
+                    className={PICKED}
+                  >
+                    {label}
+                  </ToggleGroupItem>
+                </Hint>
               ))}
             </ToggleGroup>
           </div>

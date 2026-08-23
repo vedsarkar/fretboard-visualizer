@@ -20,10 +20,11 @@ export function Hint({ label, children }) {
 }
 
 /**
- * Selection styling for ToggleGroup items. `data-[state=on]` only survives on
- * items that aren't wrapped in Hint — see the note above.
+ * Selection styling for ToggleGroup items. Keyed off both attributes, as
+ * shadcn's own toggle variants are, so it survives a wrapping Hint.
  */
-export const PICKED = 'data-[state=on]:bg-primary/20 data-[state=on]:text-primary';
+export const PICKED =
+  'aria-pressed:bg-primary/20 aria-pressed:text-primary data-[state=on]:bg-primary/20 data-[state=on]:text-primary';
 export const PICKED_SOLID =
   'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground';
 /** Muted strings read as struck through rather than merely tinted. */

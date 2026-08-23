@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Download, Eraser, Volume2 } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PITCH_FLAT, PITCH_SHARP, noteName } from '@/lib/theory.js';
-import { svgToPng, PAINT_COLORS } from '@/lib/layout.js';
+import { svgToPng } from '@/lib/layout.js';
 import { audio } from '@/lib/audio.js';
 import {
+  extraStringsAllowed,
   initialState,
   loadState,
   openStrings,
@@ -27,7 +28,7 @@ import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
 import { AboutPanel } from './components/AboutPanel.jsx';
-import { Cluster, Hint, PICKED_SOLID } from './components/Ui.jsx';
+import { Hint, PICKED_SOLID } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
 
@@ -45,9 +46,16 @@ export default function App() {
   }, [state]);
 
   /* ---- derived, memoised so playback highlights stay cheap ---- */
-  const strings = useMemo(() => openStrings(state), [state.tuningId, state.transpose]);
-  const totalStrings = useMemo(() => stringCount(state), [state.tuningId]);
-  const enabled = useMemo(() => stringEnabled(state), [state.tuningId, state.stringsOff]);
+  const strings = useMemo(
+    () => openStrings(state),
+    [state.tuningId, state.transpose, state.extraStrings],
+  );
+  const totalStrings = useMemo(() => stringCount(state), [state.tuningId, state.extraStrings]);
+  const extraAllowed = useMemo(() => extraStringsAllowed(state), [state.tuningId]);
+  const enabled = useMemo(
+    () => stringEnabled(state),
+    [state.tuningId, state.extraStrings, state.stringsOff],
+  );
   const intervals = useMemo(
     () => selectionIntervals(state),
     [state.mode, state.scaleId, state.chordId, state.useCustom, state.customIntervals],
@@ -146,16 +154,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const playPainted = () => {
-    const pitched = Object.keys(state.painted)
-      .map((key) => {
-        const [s, f] = key.split(':').map(Number);
-        return strings[s] + f;
-      })
-      .sort((a, b) => a - b);
-    if (pitched.length) audio.strum(pitched, 0.08);
-  };
-
   return (
     <TooltipProvider delayDuration={350}>
       <div className="mx-auto flex max-w-[1600px] flex-col gap-3 p-3 pb-10">
@@ -178,49 +176,6 @@ export default function App() {
             />
 
             <div className="flex flex-wrap items-center gap-2">
-              <Cluster role="group" aria-label="Marker colours">
-                {PAINT_COLORS.map((color) => (
-                  <Hint key={color} label="Click notes on the board to mark them">
-                    <button
-                      type="button"
-                      data-testid="swatch"
-                      data-color={color}
-                      aria-label={`Marker colour ${color}`}
-                      aria-pressed={state.paintColor === color}
-                      onClick={() => dispatch({ type: 'setPaintColor', color })}
-                      className={`size-5 rounded-md border-2 transition-transform ${
-                        state.paintColor === color
-                          ? 'scale-110 border-foreground'
-                          : 'border-transparent'
-                      }`}
-                      style={{ background: color }}
-                    />
-                  </Hint>
-                ))}
-                <Hint label="Clear all marked notes">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Clear marked notes"
-                    data-testid="clear-btn"
-                    onClick={() => dispatch({ type: 'clearPaint' })}
-                  >
-                    <Eraser />
-                  </Button>
-                </Hint>
-                <Hint label="Play the marked notes as a chord">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Play marked notes"
-                    data-testid="play-marked-btn"
-                    onClick={playPainted}
-                  >
-                    <Volume2 />
-                  </Button>
-                </Hint>
-              </Cluster>
-
               <ToggleGroup
                 type="single"
                 variant="outline"
@@ -283,7 +238,12 @@ export default function App() {
         />
 
         <section className="flex flex-col gap-2">
-          <BoardControls state={state} dispatch={dispatch} strings={strings} />
+          <BoardControls
+            state={state}
+            dispatch={dispatch}
+            stringCount={totalStrings}
+            extraAllowed={extraAllowed}
+          />
 
           <div
             className="overflow-x-auto rounded-xl border border-border bg-card p-2"

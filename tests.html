@@ -21,8 +21,12 @@
       import '/src/app.css';
 
       const lines = [];
-      const log = (name, pass, detail = '') =>
+      const out = document.getElementById('results');
+      // Written as we go so a hang shows the last check that got through.
+      const log = (name, pass, detail = '') => {
         lines.push(`${pass ? 'PASS' : 'FAIL'} ${name}${detail ? ' :: ' + detail : ''}`);
+        out.textContent = lines.join('\n');
+      };
 
       const tick = () => new Promise((resolve) => setTimeout(resolve, 30));
       const root = document.getElementById('mount');
@@ -72,6 +76,32 @@
         log('20 chords, rooted and sorted', theory.ALL_CHORDS.length === 20 &&
           theory.ALL_CHORDS.every((c) => c.intervals[0] === 0 &&
             c.intervals.every((v, i, a) => v >= 0 && v < 12 && (i === 0 || v > a[i - 1]))));
+        log('interval labels are the plain spellings',
+          theory.INTERVAL_LABEL.join(' ') === 'P1 m2 M2 m3 M3 P4 d5 P5 m6 M6 m7 M7',
+          theory.INTERVAL_LABEL.join(' '));
+        log('every interval name keeps its enharmonic', theory.INTERVAL_NAME.length === 12 &&
+          theory.INTERVAL_NAME.slice(1).every((n) => n.includes(' / ')));
+
+        /* ---------------- extra low strings ---------------- */
+        const spell = (midis) => midis.map((m) => theory.noteNameOctave(m, false)).join(' ');
+        const guitar = theory.findTuning('standard');
+        log('7th string is B1', spell(theory.extendedTuningMidi(guitar, 0, 1)) === 'B1 E2 A2 D3 G3 B3 E4',
+          spell(theory.extendedTuningMidi(guitar, 0, 1)));
+        log('8th string is F#1', spell(theory.extendedTuningMidi(guitar, 0, 2)) === 'F#1 B1 E2 A2 D3 G3 B3 E4',
+          spell(theory.extendedTuningMidi(guitar, 0, 2)));
+        log('added strings match the shipped 7-string tuning',
+          spell(theory.extendedTuningMidi(guitar, 0, 1)) === spell(theory.tuningMidi(theory.findTuning('guitar-7'))));
+        log('added strings match the shipped 8-string tuning',
+          spell(theory.extendedTuningMidi(guitar, 0, 2)) === spell(theory.tuningMidi(theory.findTuning('guitar-8'))));
+        log('extra strings follow transposition',
+          spell(theory.extendedTuningMidi(guitar, 2, 1)) === 'C#2 F#2 B2 E3 A3 C#4 F#4',
+          spell(theory.extendedTuningMidi(guitar, 2, 1)));
+        log('5th bass string is B0',
+          spell(theory.extendedTuningMidi(theory.findTuning('bass-4'), 0, 1)) === 'B0 E1 A1 D2 G2',
+          spell(theory.extendedTuningMidi(theory.findTuning('bass-4'), 0, 1)));
+        log('re-entrant ukulele adds below its lowest pitch',
+          theory.extendedTuningMidi(theory.findTuning('ukulele'), 0, 1)[0] === 55,
+          spell(theory.extendedTuningMidi(theory.findTuning('ukulele'), 0, 1)));
 
         /* ---------------- patterns ---------------- */
         const pool = seq.notePool({ rootPc: 0, intervals: [0, 2, 4, 5, 7, 9, 11], lowMidi: 40, highMidi: 64, octaves: 1 });
@@ -112,8 +142,21 @@
         log('cycle wraps', st.notesPerBeat === 1);
         st = S.reducer({ ...base, groupLength: 3, permIndex: 5 }, { type: 'cycle', field: 'groupLength', values: [1, 2, 3, 4] });
         log('changing group resets permutation', st.permIndex === 0);
-        st = S.reducer({ ...base, transpose: 3, stringsOff: [1] }, { type: 'setTuning', id: 'bass-4' });
-        log('changing tuning clears transpose and mutes', st.transpose === 0 && st.stringsOff.length === 0);
+        st = S.reducer({ ...base, transpose: 3, stringsOff: [1], extraStrings: 2 }, { type: 'setTuning', id: 'bass-4' });
+        log('changing tuning clears transpose, mutes and extra strings',
+          st.transpose === 0 && st.stringsOff.length === 0 && st.extraStrings === 0);
+
+        st = S.reducer({ ...base, stringsOff: [1], painted: { '0:3': '#fff' } }, { type: 'setExtraStrings', extra: 1 });
+        log('adding a string clears mutes and marks',
+          st.extraStrings === 1 && st.stringsOff.length === 0 && Object.keys(st.painted).length === 0);
+        log('adding a string grows the board', S.stringCount(st) === 7, String(S.stringCount(st)));
+        st = S.reducer(base, { type: 'setExtraStrings', extra: 5 });
+        log('extra strings stop at eight total', S.stringCount(st) === 8, String(S.stringCount(st)));
+        st = S.reducer(base, { type: 'setExtraStrings', extra: -1 });
+        log('extra strings never go negative', st.extraStrings === 0);
+        log('an 8-string tuning takes no extras',
+          S.extraStringsAllowed({ ...base, tuningId: 'guitar-8' }) === 0);
+        log('a 6-string tuning takes two extras', S.extraStringsAllowed(base) === 2);
         log('positionsFor prefers low frets', S.positionsFor(base, 60)[0].fret <= 8);
 
         /* ---------------- renderer, in isolation ---------------- */
@@ -148,21 +191,29 @@
         log('C major spelled naturally', [...new Set(dotLabels())].sort().join('') === 'ABCDEFG',
           [...new Set(dotLabels())].join(' '));
         log('fret readout starts at 24', readout('frets-value') === '24', readout('frets-value'));
-        log('tuning summary shows standard tuning',
-          readout('tuning-summary') === 'E2 A2 D3 G3 B3 E4', readout('tuning-summary'));
         log('shadcn tokens applied',
           getComputedStyle(document.documentElement).getPropertyValue('--primary').trim().length > 0,
           getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
 
-        // Root note
-        await click(byText('D', byId('key-group')));
-        log('root change respells to F#/C#', dotLabels().includes('F#') && dotLabels().includes('C#'));
+        // Root note. The Select renders its list in a portal on open, so the
+        // respelling itself is checked through the reducer instead.
+        log('root reads C on the select', readout('root-select').replace(/\s+/g, '') === 'RootC',
+          readout('root-select').replace(/\s+/g, ''));
+        const inD = S.pitchMap({ ...S.initialState, rootPc: 2 });
+        log('D major spells F# and C#', inD.has(6) && inD.has(1));
 
-        // Notation and degree toggles
-        await click(byId('notation-toggle'));
-        log('flat toggle respells', dotLabels().some((l) => /^[A-G]b$/.test(l)),
+        // Notation. C major has no accidentals, so borrow a minor third from the
+        // interval row to give the flat toggle something to respell.
+        await click(inGroup('interval-group')[3]);
+        log('added minor third spells D#', dotLabels().includes('D#'),
           [...new Set(dotLabels())].join(' '));
         await click(byId('notation-toggle'));
+        log('flat toggle respells D# as Eb', dotLabels().includes('Eb'),
+          [...new Set(dotLabels())].join(' '));
+        await click(byId('notation-toggle'));
+        await click(inGroup('interval-group')[3]);
+        log('dropping the third restores the major scale', !dotLabels().includes('D#'),
+          [...new Set(dotLabels())].join(' '));
 
         await click(byId('degree-toggle'));
         const degreeSet = new Set(dotLabels());
@@ -193,6 +244,25 @@
         log('muting a string dims its notes', dimmed > 0, `${dimmed} dimmed`);
         await click(byId('string-all'));
 
+        // Extra low strings
+        log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',
+          openLabelsIn(board()).join(' '));
+        await click(byId('strings-inc'));
+        log('seventh string adds a low B1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1',
+          openLabelsIn(board()).join(' '));
+        await click(byId('strings-inc'));
+        log('eighth string adds a low F#1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1 F#1',
+          openLabelsIn(board()).join(' '));
+        log('string readout follows the count', readout('strings-value') === '8', readout('strings-value'));
+        log('string toggles cover all eight', inGroup('string-group').length === 8,
+          String(inGroup('string-group').length));
+        await click(byId('strings-inc'));
+        log('the stepper stops at eight', readout('strings-value') === '8', readout('strings-value'));
+        await click(byId('strings-dec'));
+        await click(byId('strings-dec'));
+        log('removing extras restores six strings', readout('strings-value') === '6' &&
+          openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2', openLabelsIn(board()).join(' '));
+
         // Intervals -> custom
         await click(inGroup('interval-group')[1]);
         log('changing an interval switches to Custom',
@@ -206,20 +276,6 @@
         const afterX = markers()[0].querySelector('circle').getAttribute('cx');
         log('lefty mirrors the board', beforeX !== afterX, `${beforeX} -> ${afterX}`);
         await click(byId('hand-toggle'));
-
-        // Painting
-        const swatch = allById('swatch')[1];
-        await click(swatch);
-        log('selecting a colour marks the swatch', swatch.getAttribute('aria-pressed') === 'true');
-        const target = [...markers()].find((n) => n.querySelector('.fb-dot').getAttribute('fill') !== '#ff5b5b');
-        await click(target);
-        const repainted = [...markers()].filter(
-          (n) => n.querySelector('.fb-dot').getAttribute('fill') === '#ff5b5b',
-        ).length;
-        log('painting a note recolours it', repainted >= 1, `${repainted} red dots`);
-        await click(byId('clear-btn'));
-        log('clear removes paint',
-          [...markers()].every((n) => n.querySelector('.fb-dot').getAttribute('fill') !== '#ff5b5b'));
 
         // Spotlight
         await doubleClick(markers()[2]);
@@ -295,7 +351,7 @@
         log('uncaught error', false, `${error && error.message} | ${error && error.stack}`);
       }
 
-      document.getElementById('results').textContent = lines.join('\n');
+      log(`${lines.filter((l) => l.startsWith('FAIL')).length} failures of ${lines.length} checks`, true);
     </script>
   </body>
 </html>

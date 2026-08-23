@@ -4,10 +4,11 @@
 
 import {
   CHORD_VOICING,
+  MAX_STRINGS,
+  extendedTuningMidi,
   findChord,
   findScale,
   findTuning,
-  tuningMidi,
 } from './theory.js';
 
 export const STORAGE_KEY = 'freetboard.react.v1';
@@ -47,6 +48,7 @@ export const initialState = {
   customIntervals: [0, 2, 4, 5, 7, 9, 11],
   rootPc: 0,
   tuningId: 'standard',
+  extraStrings: 0,
   transpose: 0,
   fretCount: 24,
   leftHanded: false,
@@ -107,10 +109,19 @@ export function reducer(state, action) {
       return {
         ...state,
         tuningId: action.id,
+        extraStrings: 0,
         transpose: 0,
         stringsOff: [],
         painted: {},
       };
+
+    // Extra strings shift every string index, so mutes and marks can't carry over.
+    case 'setExtraStrings': {
+      const base = findTuning(state.tuningId)?.notes.length ?? 6;
+      const extra = Math.min(Math.max(0, action.extra), Math.max(0, MAX_STRINGS - base));
+      if (extra === state.extraStrings) return state;
+      return { ...state, extraStrings: extra, stringsOff: [], painted: {} };
+    }
 
     case 'setDegrees': {
       const next = [...action.indices].sort((a, b) => a - b);
@@ -178,8 +189,15 @@ export function reducer(state, action) {
 /* --------------------------------------------------------------- selectors */
 
 export const currentTuning = (state) => findTuning(state.tuningId) ?? findTuning('standard');
-export const openStrings = (state) => tuningMidi(currentTuning(state), state.transpose);
-export const stringCount = (state) => currentTuning(state).notes.length;
+
+export const openStrings = (state) =>
+  extendedTuningMidi(currentTuning(state), state.transpose, state.extraStrings);
+
+export const stringCount = (state) => openStrings(state).length;
+
+/** Extra strings this tuning can still take before hitting the 8-string ceiling. */
+export const extraStringsAllowed = (state) =>
+  Math.max(0, MAX_STRINGS - currentTuning(state).notes.length);
 
 export const stringEnabled = (state) =>
   Array.from({ length: stringCount(state) }, (_, i) => !state.stringsOff.includes(i));

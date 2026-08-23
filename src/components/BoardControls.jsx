@@ -1,6 +1,5 @@
 import { FlipHorizontal2 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Select,
   SelectContent,
@@ -10,10 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Cap, Cluster, Hint, PICKED_SOLID, Stepper } from './Ui.jsx';
-import { INSTRUMENT_GROUPS, PITCH_FLAT, PITCH_SHARP, noteNameOctave } from '@/lib/theory.js';
+import { Hint, Stepper } from './Ui.jsx';
+import { INSTRUMENT_GROUPS, PITCH_FLAT, PITCH_SHARP } from '@/lib/theory.js';
 
-export function BoardControls({ state, dispatch, strings }) {
+export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
   const names = state.flats ? PITCH_FLAT : PITCH_SHARP;
 
   return (
@@ -39,46 +38,57 @@ export function BoardControls({ state, dispatch, strings }) {
         </SelectContent>
       </Select>
 
-      <span className="text-xs tabular-nums text-muted-foreground" data-testid="tuning-summary">
-        {strings.map((midi) => noteNameOctave(midi, state.flats)).join(' ')}
-      </span>
+      <Hint label="Mirror the neck for left-handed players">
+        <Toggle
+          size="sm"
+          variant="outline"
+          aria-label="Left-handed"
+          data-testid="hand-toggle"
+          pressed={state.leftHanded}
+          onPressedChange={() => dispatch({ type: 'toggle', field: 'leftHanded' })}
+        >
+          <FlipHorizontal2 />
+          {state.leftHanded ? 'Lefty' : 'Righty'}
+        </Toggle>
+      </Hint>
 
-      <Cluster>
-        <Hint label="Mirror the neck for left-handed players">
-          <Toggle
-            size="sm"
-            aria-label="Left-handed"
-            data-testid="hand-toggle"
-            pressed={state.leftHanded}
-            onPressedChange={() => dispatch({ type: 'toggle', field: 'leftHanded' })}
-          >
-            <FlipHorizontal2 />
-            {state.leftHanded ? 'Lefty' : 'Righty'}
-          </Toggle>
-        </Hint>
-        <Hint label="Spell accidentals as sharps or flats">
-          <Toggle
-            size="sm"
-            aria-label="Use flats"
-            data-testid="notation-toggle"
-            pressed={state.flats}
-            onPressedChange={() => dispatch({ type: 'toggle', field: 'flats' })}
-          >
-            {state.flats ? '\u266d Flats' : '\u266f Sharps'}
-          </Toggle>
-        </Hint>
-        <Hint label="Label dots with note names or scale degrees">
-          <Toggle
-            size="sm"
-            aria-label="Show degrees"
-            data-testid="degree-toggle"
-            pressed={state.showDegrees}
-            onPressedChange={() => dispatch({ type: 'toggle', field: 'showDegrees' })}
-          >
-            {state.showDegrees ? 'Degrees' : 'Notes'}
-          </Toggle>
-        </Hint>
-      </Cluster>
+      <Hint label="Spell accidentals as sharps or flats">
+        <Toggle
+          size="sm"
+          variant="outline"
+          aria-label="Use flats"
+          data-testid="notation-toggle"
+          pressed={state.flats}
+          onPressedChange={() => dispatch({ type: 'toggle', field: 'flats' })}
+        >
+          {state.flats ? '\u266d Flats' : '\u266f Sharps'}
+        </Toggle>
+      </Hint>
+
+      <Hint label="Label dots with note names or scale degrees">
+        <Toggle
+          size="sm"
+          variant="outline"
+          aria-label="Show degrees"
+          data-testid="degree-toggle"
+          pressed={state.showDegrees}
+          onPressedChange={() => dispatch({ type: 'toggle', field: 'showDegrees' })}
+        >
+          {state.showDegrees ? 'Degrees' : 'Notes'}
+        </Toggle>
+      </Hint>
+
+      {extraAllowed > 0 && (
+        <Stepper
+          label="Strings"
+          testId="strings"
+          value={stringCount}
+          decHint="Remove the lowest added string"
+          incHint="Add a string below the lowest one"
+          onDecrease={() => dispatch({ type: 'setExtraStrings', extra: state.extraStrings - 1 })}
+          onIncrease={() => dispatch({ type: 'setExtraStrings', extra: state.extraStrings + 1 })}
+        />
+      )}
 
       <Stepper
         label="Tune"
@@ -100,27 +110,31 @@ export function BoardControls({ state, dispatch, strings }) {
         onIncrease={() => dispatch({ type: 'clamp', field: 'fretCount', delta: 1, min: 4, max: 24 })}
       />
 
-      <Cluster className="ml-auto" role="group" aria-label="Root note">
-        <Cap>Root</Cap>
-        <ToggleGroup
-          type="single"
+      <Select
+        value={String(state.rootPc)}
+        onValueChange={(pc) => dispatch({ type: 'setRoot', pc: Number(pc) })}
+      >
+        <SelectTrigger
           size="sm"
-          value={String(state.rootPc)}
-          onValueChange={(value) => value && dispatch({ type: 'setRoot', pc: Number(value) })}
-          data-testid="key-group"
+          className="ml-auto w-[124px]"
+          aria-label="Root note"
+          data-testid="root-select"
         >
+          <span className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+              Root
+            </span>
+            <SelectValue />
+          </span>
+        </SelectTrigger>
+        <SelectContent>
           {names.map((name, pc) => (
-            <ToggleGroupItem
-              key={name}
-              value={String(pc)}
-              aria-label={name}
-              className={`font-semibold ${PICKED_SOLID}`}
-            >
+            <SelectItem key={name} value={String(pc)} className="font-semibold">
               {name}
-            </ToggleGroupItem>
+            </SelectItem>
           ))}
-        </ToggleGroup>
-      </Cluster>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
