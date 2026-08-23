@@ -180,14 +180,18 @@
         // Frets and tuning steppers
         const fretsGroup = byLabel('Fret count');
         const fretReadout = () => Number(fretsGroup.querySelector('.readout').textContent);
-        const fretsBefore = fretReadout();
         const fretColumns = () => board().viewBox.baseVal.width;
+        const fretsBefore = fretReadout();
         const widthBefore = fretColumns();
-        await click(byLabel('More frets', fretsGroup));
-        log('fret stepper increases count', fretReadout() === fretsBefore + 1, `${fretsBefore} -> ${fretReadout()}`);
-        log('extra fret widens the board', fretColumns() > widthBefore, `${widthBefore} -> ${fretColumns()}`);
+        log('default view is a full 24-fret neck', fretsBefore === 24, String(fretsBefore));
+        // Step down first: the default sits at the 24-fret maximum.
         await click(byLabel('Fewer frets', fretsGroup));
-        log('fret stepper decreases count', fretReadout() === fretsBefore);
+        log('fret stepper decreases count', fretReadout() === fretsBefore - 1, `${fretsBefore} -> ${fretReadout()}`);
+        log('one fewer fret narrows the board', fretColumns() < widthBefore, `${widthBefore} -> ${fretColumns()}`);
+        await click(byLabel('More frets', fretsGroup));
+        log('fret stepper increases count', fretReadout() === fretsBefore);
+        await click(byLabel('More frets', fretsGroup));
+        log('fret count clamps at 24', fretReadout() === 24, String(fretReadout()));
         const tuneGroup = byLabel('Transpose tuning');
         await click(byLabel('Tune down a semitone', tuneGroup));
         log('tuning down shows -1', tuneGroup.querySelector('.readout').textContent === '-1');

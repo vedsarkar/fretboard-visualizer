@@ -48,7 +48,7 @@ export const initialState = {
   rootPc: 0,
   tuningId: 'standard',
   transpose: 0,
-  fretCount: 15,
+  fretCount: 24,
   leftHanded: false,
   flats: false,
   showDegrees: false,
