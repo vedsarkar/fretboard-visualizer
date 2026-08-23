@@ -72,9 +72,6 @@ export const initialState = {
   persist: Object.fromEntries(PERSIST_FIELDS.map(([key]) => [key, false])),
 };
 
-const toggleIn = (list, value) =>
-  list.includes(value) ? list.filter((v) => v !== value) : [...list, value].sort((a, b) => a - b);
-
 export function reducer(state, action) {
   switch (action.type) {
     case 'patch':
@@ -92,9 +89,9 @@ export function reducer(state, action) {
     case 'enableCustom':
       return { ...state, useCustom: true, customIntervals: selectionIntervals(state) };
 
-    case 'toggleInterval': {
-      const base = state.useCustom ? state.customIntervals : selectionIntervals(state);
-      const next = toggleIn(base, action.semitones);
+    // ToggleGroup reports the whole selection, not the item that changed.
+    case 'setIntervals': {
+      const next = [...action.semitones].sort((a, b) => a - b);
       return {
         ...state,
         useCustom: true,
@@ -115,8 +112,9 @@ export function reducer(state, action) {
         painted: {},
       };
 
-    case 'toggleDegree': {
-      const next = toggleIn(state.degreeFilter, action.index);
+    case 'setDegrees': {
+      const next = [...action.indices].sort((a, b) => a - b);
+      // Every degree selected means no filter at all.
       const total = selectionIntervals(state).length;
       return { ...state, degreeFilter: next.length === total ? [] : next };
     }
@@ -124,8 +122,11 @@ export function reducer(state, action) {
     case 'clearDegrees':
       return { ...state, degreeFilter: [] };
 
-    case 'toggleString':
-      return { ...state, stringsOff: toggleIn(state.stringsOff, action.index) };
+    case 'setStrings': {
+      const on = new Set(action.on);
+      const off = Array.from({ length: action.total }, (_, i) => i).filter((i) => !on.has(i));
+      return { ...state, stringsOff: off };
+    }
 
     case 'clearStrings':
       return { ...state, stringsOff: [] };

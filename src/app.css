@@ -1,0 +1,29 @@
+/* Selected states borrow the fretboard's note colour so the controls and the
+   board read as one system. */
+.dark {
+  --primary: #0070f2;
+  --primary-foreground: #ffffff;
+  --ring: #0070f2;
+}
+
+/* The playback highlight stays in CSS rather than inline on the SVG: svgToPng
+   serialises inline attributes only, so a dot frozen mid-flash never reaches
+   the exported PNG. */
+.fb-note:hover .fb-dot {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.fb-note.is-flashing .fb-dot {
+  animation: fb-pulse 0.4s ease-out;
+}
+
+@keyframes fb-pulse {
+  0%,
+  40% {
+    filter: brightness(2.4);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}

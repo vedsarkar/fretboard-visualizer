@@ -101,6 +101,7 @@ export const Fretboard = forwardRef(function Fretboard(
       xmlns="http://www.w3.org/2000/svg"
       viewBox={`0 0 ${L.width} ${L.height}`}
       width="100%"
+      className="block min-w-[640px]"
       role="img"
       aria-label="Fretboard diagram"
       preserveAspectRatio="xMidYMid meet"

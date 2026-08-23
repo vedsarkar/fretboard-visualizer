@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { PITCH_FLAT, PITCH_SHARP, noteName } from './lib/theory.js';
-import { svgToPng, PAINT_COLORS } from './lib/layout.js';
-import { audio } from './lib/audio.js';
+import { Download, Eraser, Volume2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { PITCH_FLAT, PITCH_SHARP, noteName } from '@/lib/theory.js';
+import { svgToPng, PAINT_COLORS } from '@/lib/layout.js';
+import { audio } from '@/lib/audio.js';
 import {
-  currentTuning,
   initialState,
   loadState,
   openStrings,
@@ -15,15 +19,15 @@ import {
   selectionName,
   stringCount,
   stringEnabled,
-} from './lib/state.js';
-import { useSequencer } from './hooks/useSequencer.js';
+} from '@/lib/state.js';
+import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
 import { Transport } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
 import { AboutPanel } from './components/AboutPanel.jsx';
-import { Btn } from './components/Ui.jsx';
+import { Cluster, Hint, PICKED_SOLID } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
 
@@ -33,7 +37,6 @@ const restore = (base) => ({ ...base, ...(loadState() || {}) });
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, restore);
   const [flash, setFlash] = useState(NO_FLASH);
-  const [showAbout, setShowAbout] = useState(false);
   const svgRef = useRef(null);
   const flashId = useRef(0);
 
@@ -42,13 +45,9 @@ export default function App() {
   }, [state]);
 
   /* ---- derived, memoised so playback highlights stay cheap ---- */
-  const tuning = useMemo(() => currentTuning(state), [state.tuningId]);
   const strings = useMemo(() => openStrings(state), [state.tuningId, state.transpose]);
   const totalStrings = useMemo(() => stringCount(state), [state.tuningId]);
-  const enabled = useMemo(
-    () => stringEnabled(state),
-    [state.tuningId, state.stringsOff],
-  );
+  const enabled = useMemo(() => stringEnabled(state), [state.tuningId, state.stringsOff]);
   const intervals = useMemo(
     () => selectionIntervals(state),
     [state.mode, state.scaleId, state.chordId, state.useCustom, state.customIntervals],
@@ -127,8 +126,6 @@ export default function App() {
       if (event.code === 'Space') {
         event.preventDefault();
         toggle();
-      } else if (event.key === 'Escape') {
-        setShowAbout(false);
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -159,133 +156,157 @@ export default function App() {
     if (pitched.length) audio.strum(pitched, 0.08);
   };
 
-  const sequencePreview = notes.slice(0, 18).map((m) => noteName(m, state.flats)).join(' ');
-
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <h1>Freetboard</h1>
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="About and keyboard shortcuts"
-            onClick={() => setShowAbout((v) => !v)}
-          >
-            ?
-          </button>
-        </div>
+    <TooltipProvider delayDuration={350}>
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-3 p-3 pb-10">
+        <header className="flex flex-wrap items-start gap-3">
+          <div className="flex items-center gap-1">
+            <h1 className="text-2xl leading-none font-bold tracking-tight text-primary">
+              Freetboard
+            </h1>
+            <AboutPanel />
+          </div>
 
-        <div className="topbar-controls">
-          <Transport
-            state={state}
-            dispatch={dispatch}
-            isPlaying={isPlaying}
-            onToggle={toggle}
-            permutation={permutation}
-            permutationCount={permutationCount}
-          />
+          <div className="flex flex-1 flex-col gap-2">
+            <Transport
+              state={state}
+              dispatch={dispatch}
+              isPlaying={isPlaying}
+              onToggle={toggle}
+              permutation={permutation}
+              permutationCount={permutationCount}
+            />
 
-          <div className="ctl-row">
-            <div className="group" role="group" aria-label="Marker colours">
-              <Btn
-                className="btn-reset"
-                title="Clear marked notes"
-                onClick={() => dispatch({ type: 'clearPaint' })}
-              >
-                Clear
-              </Btn>
-              <div className="palette">
+            <div className="flex flex-wrap items-center gap-2">
+              <Cluster role="group" aria-label="Marker colours">
                 {PAINT_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`swatch${state.paintColor === color ? ' is-active' : ''}`}
-                    style={{ background: color }}
-                    aria-label={`Marker colour ${color}`}
-                    title={`Mark notes in ${color}`}
-                    onClick={() => dispatch({ type: 'setPaintColor', color })}
-                  />
+                  <Hint key={color} label="Click notes on the board to mark them">
+                    <button
+                      type="button"
+                      data-testid="swatch"
+                      data-color={color}
+                      aria-label={`Marker colour ${color}`}
+                      aria-pressed={state.paintColor === color}
+                      onClick={() => dispatch({ type: 'setPaintColor', color })}
+                      className={`size-5 rounded-md border-2 transition-transform ${
+                        state.paintColor === color
+                          ? 'scale-110 border-foreground'
+                          : 'border-transparent'
+                      }`}
+                      style={{ background: color }}
+                    />
+                  </Hint>
                 ))}
+                <Hint label="Clear all marked notes">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Clear marked notes"
+                    data-testid="clear-btn"
+                    onClick={() => dispatch({ type: 'clearPaint' })}
+                  >
+                    <Eraser />
+                  </Button>
+                </Hint>
+                <Hint label="Play the marked notes as a chord">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Play marked notes"
+                    data-testid="play-marked-btn"
+                    onClick={playPainted}
+                  >
+                    <Volume2 />
+                  </Button>
+                </Hint>
+              </Cluster>
+
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={state.mode}
+                onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
+                data-testid="mode-group"
+              >
+                <ToggleGroupItem value="scales" aria-label="Scales" className={PICKED_SOLID}>
+                  Scales
+                </ToggleGroupItem>
+                <ToggleGroupItem value="chords" aria-label="Chords" className={PICKED_SOLID}>
+                  Chords
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <div
+                className="min-w-40 flex-1 truncate rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground tabular-nums"
+                data-testid="sequence-display"
+                aria-live="polite"
+              >
+                {notes.length ? (
+                  <>
+                    <span className="font-semibold text-primary">{notes.length} notes </span>
+                    {notes.slice(0, 18).map((m) => noteName(m, state.flats)).join(' ')}
+                    {notes.length > 18 ? ' \u2026' : ''}
+                  </>
+                ) : (
+                  'No notes in range'
+                )}
               </div>
-              <Btn title="Play the marked notes" onClick={playPainted}>
-                Play marked
-              </Btn>
-            </div>
 
-            <div className="group mode-selector" role="group" aria-label="Mode">
-              <Btn
-                active={state.mode === 'scales'}
-                onClick={() => dispatch({ type: 'setMode', mode: 'scales' })}
-              >
-                Scales
-              </Btn>
-              <Btn
-                active={state.mode === 'chords'}
-                onClick={() => dispatch({ type: 'setMode', mode: 'chords' })}
-              >
-                Chords
-              </Btn>
-            </div>
-
-            <div className="sequence-display" aria-live="polite">
-              {notes.length ? (
-                <>
-                  <b>{notes.length} notes </b>
-                  {sequencePreview}
-                  {notes.length > 18 ? ' \u2026' : ''}
-                </>
-              ) : (
-                'No notes in range'
-              )}
-            </div>
-
-            <div className="group group-end">
-              <input
-                className="title-input"
-                type="text"
-                placeholder="Untitled view"
-                aria-label="Diagram title"
-                value={state.title}
-                onChange={(event) => dispatch({ type: 'patch', patch: { title: event.target.value } })}
-              />
-              <Btn title="Download the diagram as a PNG" onClick={onExport}>
-                Export
-              </Btn>
-              <SettingsPanel state={state} dispatch={dispatch} />
+              <div className="ml-auto flex items-center gap-2">
+                <Input
+                  className="h-8 w-40 text-xs"
+                  placeholder="Untitled view"
+                  aria-label="Diagram title"
+                  value={state.title}
+                  onChange={(event) =>
+                    dispatch({ type: 'patch', patch: { title: event.target.value } })
+                  }
+                />
+                <Hint label="Download the diagram as a PNG">
+                  <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
+                    <Download />
+                    Export
+                  </Button>
+                </Hint>
+                <SettingsPanel state={state} dispatch={dispatch} />
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <SelectionPanel
-        state={state}
-        dispatch={dispatch}
-        intervals={intervals}
-        stringCount={totalStrings}
-      />
+        <SelectionPanel
+          state={state}
+          dispatch={dispatch}
+          intervals={intervals}
+          stringCount={totalStrings}
+        />
 
-      <section className="board">
-        <BoardControls state={state} dispatch={dispatch} tuning={tuning} strings={strings} />
-        <div className="fretboard">
-          <Fretboard
-            ref={svgRef}
-            view={view}
-            flash={flash}
-            onSelect={onSelect}
-            onSpotlight={onSpotlight}
-          />
-        </div>
-        <p className="summary">
-          <b>
-            {names[state.rootPc]} {name}
-          </b>
-          {'  '}
-          {intervals.map((semi) => names[(state.rootPc + semi) % 12]).join(' \u00b7 ')}
-        </p>
-      </section>
+        <section className="flex flex-col gap-2">
+          <BoardControls state={state} dispatch={dispatch} strings={strings} />
 
-      {showAbout ? <AboutPanel onClose={() => setShowAbout(false)} /> : null}
-    </div>
+          <div
+            className="overflow-x-auto rounded-xl border border-border bg-card p-2"
+            data-testid="fretboard"
+          >
+            <Fretboard
+              ref={svgRef}
+              view={view}
+              flash={flash}
+              onSelect={onSelect}
+              onSpotlight={onSpotlight}
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground" data-testid="summary">
+            <span className="font-semibold text-foreground">
+              {names[state.rootPc]} {name}
+            </span>
+            {'  '}
+            {intervals.map((semi) => names[(state.rootPc + semi) % 12]).join(' \u00b7 ')}
+          </p>
+        </section>
+      </div>
+    </TooltipProvider>
   );
 }

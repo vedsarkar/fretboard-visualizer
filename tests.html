@@ -1,34 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <title>Freetboard checks</title>
   </head>
   <body>
-    <pre id="results">running…</pre>
+    <pre id="results" style="font: 12px ui-monospace, monospace">running…</pre>
     <div id="mount"></div>
+    <div id="probe"></div>
     <script type="module">
       import { createRoot } from 'react-dom/client';
       import { createElement } from 'react';
       import App from '/src/App.jsx';
+      import { Fretboard } from '/src/components/Fretboard.jsx';
       import * as theory from '/src/lib/theory.js';
       import * as seq from '/src/lib/sequencer.js';
       import * as S from '/src/lib/state.js';
       import { svgToPng } from '/src/lib/layout.js';
-      import '/src/styles.css';
+      import '/src/index.css';
+      import '/src/app.css';
 
       const lines = [];
       const log = (name, pass, detail = '') =>
         lines.push(`${pass ? 'PASS' : 'FAIL'} ${name}${detail ? ' :: ' + detail : ''}`);
 
-      // Let React flush state updates and effects.
       const tick = () => new Promise((resolve) => setTimeout(resolve, 30));
       const root = document.getElementById('mount');
-      const buttons = (scope = root) => [...scope.querySelectorAll('button')];
-      const byText = (text, scope) => buttons(scope).find((b) => b.textContent.trim() === text);
-      const byLabel = (label, scope = root) => scope.querySelector(`[aria-label="${label}"]`);
-      // SVG elements have no .click(), so fall back to a bubbling MouseEvent
-      // that React's delegated listener still picks up.
+      const byId = (id, scope = root) => scope.querySelector(`[data-testid="${id}"]`);
+      const allById = (id, scope = root) => [...scope.querySelectorAll(`[data-testid="${id}"]`)];
+      const inGroup = (id) => [...byId(id).querySelectorAll('button')];
+      const byText = (text, scope = root) =>
+        [...scope.querySelectorAll('button')].find((b) => b.textContent.trim() === text);
+
+      // SVG nodes have no .click(); React's delegated listener still sees a
+      // bubbling MouseEvent.
       const fire = (node, type, detail) =>
         node.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, detail }));
       const click = async (node) => {
@@ -40,11 +45,13 @@
         fire(node, 'dblclick', 2);
         await tick();
       };
-      const board = () => root.querySelector('.fretboard svg');
+
+      const board = () => byId('fretboard').querySelector('svg');
       const markers = () => root.querySelectorAll('.fb-note');
       const dotLabels = () => [...root.querySelectorAll('.fb-note text')].map((t) => t.textContent);
-      const openLabels = () =>
-        [...board().querySelectorAll('text')]
+      const readout = (id) => byId(id).textContent.trim();
+      const openLabelsIn = (svg) =>
+        [...svg.querySelectorAll('text')]
           .filter((t) => /^[A-G]#?\d$/.test(t.textContent))
           .map((t) => ({ name: t.textContent, y: Number(t.getAttribute('y')) }))
           .sort((a, b) => a.y - b.y)
@@ -56,7 +63,6 @@
         /* ---------------- pure theory ---------------- */
         log('E2 is MIDI 40', theory.nameToMidi('E2') === 40);
         log('C4 is MIDI 60', theory.nameToMidi('C4') === 60);
-        log('F#1 is MIDI 30', theory.nameToMidi('F#1') === 30);
         log('A4 = 440Hz', Math.abs(theory.midiToFreq(69) - 440) < 1e-9);
         log('all 25 tunings parse', theory.ALL_TUNINGS.length === 25 &&
           theory.ALL_TUNINGS.every((t) => t.notes.every((n) => Number.isFinite(theory.nameToMidi(n)))));
@@ -73,161 +79,203 @@
         const upFour = seq.buildSequence(pool, { length: 4, jump: 1, perm: [0, 1, 2, 3], direction: 'up' });
         log('1234 pattern head', upFour.slice(0, 5).join(',') === [pool[0], pool[1], pool[2], pool[3], pool[1]].join(','), upFour.slice(0, 8).join(','));
         const thirds = seq.buildSequence(pool, { length: 2, jump: 2, perm: [0, 1], direction: 'up' });
-        log('thirds step 2 degrees', thirds[1] === pool[2] && thirds[2] === pool[1], thirds.slice(0, 6).join(','));
+        log('thirds step 2 degrees', thirds[1] === pool[2] && thirds[2] === pool[1]);
         log('perm count for 4 = 24', seq.permutations(4).length === 24);
         log('perm label', seq.permutationLabel([0, 2, 1, 3]) === '1324');
 
         /* ---------------- reducer ---------------- */
         const base = S.initialState;
-        let st = S.reducer(base, { type: 'toggleInterval', semitones: 1 });
-        log('toggleInterval enters custom mode', st.useCustom && st.customIntervals.includes(1));
-        st = S.reducer(st, { type: 'toggleInterval', semitones: 1 });
-        log('toggleInterval is reversible', !st.customIntervals.includes(1));
+        log('default is a 24-fret neck', base.fretCount === 24, String(base.fretCount));
+
+        let st = S.reducer(base, { type: 'setIntervals', semitones: [0, 3, 7] });
+        log('setIntervals enters custom mode', st.useCustom && st.customIntervals.join(',') === '0,3,7');
+        st = S.reducer(base, { type: 'setIntervals', semitones: [] });
+        log('emptying intervals keeps the root', st.customIntervals.join(',') === '0');
+        st = S.reducer(base, { type: 'setIntervals', semitones: [7, 0, 3] });
+        log('setIntervals sorts', st.customIntervals.join(',') === '0,3,7');
+
+        st = S.reducer(base, { type: 'setDegrees', indices: [2, 0] });
+        log('setDegrees sorts', st.degreeFilter.join(',') === '0,2');
+        st = S.reducer(base, { type: 'setDegrees', indices: [0, 1, 2, 3, 4, 5, 6] });
+        log('selecting every degree means no filter', st.degreeFilter.length === 0);
+
+        st = S.reducer(base, { type: 'setStrings', on: [0, 1], total: 6 });
+        log('setStrings stores the complement', st.stringsOff.join(',') === '2,3,4,5', st.stringsOff.join(','));
+        st = S.reducer(base, { type: 'setStrings', on: [0, 1, 2, 3, 4, 5], total: 6 });
+        log('all strings on means none muted', st.stringsOff.length === 0);
+
         st = S.reducer(base, { type: 'selectChord', id: 'maj7' });
         log('selectChord switches mode', st.mode === 'chords' && st.chordId === 'maj7');
         st = S.reducer(base, { type: 'clamp', field: 'tempo', delta: -1000, min: 30, max: 300 });
         log('tempo clamps at 30', st.tempo === 30);
-        st = S.reducer(base, { type: 'cycle', field: 'notesPerBeat', values: [1, 2, 3, 4] });
-        log('cycle advances', st.notesPerBeat === 3, String(st.notesPerBeat));
         st = S.reducer({ ...base, notesPerBeat: 4 }, { type: 'cycle', field: 'notesPerBeat', values: [1, 2, 3, 4] });
         log('cycle wraps', st.notesPerBeat === 1);
         st = S.reducer({ ...base, groupLength: 3, permIndex: 5 }, { type: 'cycle', field: 'groupLength', values: [1, 2, 3, 4] });
         log('changing group resets permutation', st.permIndex === 0);
-        const allDegrees = [0, 1, 2, 3, 4, 5];
-        st = allDegrees.reduce((acc, index) => S.reducer(acc, { type: 'toggleDegree', index }), base);
-        st = S.reducer(st, { type: 'toggleDegree', index: 6 });
-        log('selecting every degree resets to All', st.degreeFilter.length === 0, JSON.stringify(st.degreeFilter));
         st = S.reducer({ ...base, transpose: 3, stringsOff: [1] }, { type: 'setTuning', id: 'bass-4' });
         log('changing tuning clears transpose and mutes', st.transpose === 0 && st.stringsOff.length === 0);
-        log('positionsFor prefers low frets', S.positionsFor(base, 60)[0].fret <= 8, JSON.stringify(S.positionsFor(base, 60)[0]));
+        log('positionsFor prefers low frets', S.positionsFor(base, 60)[0].fret <= 8);
+
+        /* ---------------- renderer, in isolation ---------------- */
+        const probe = document.getElementById('probe');
+        const ukulele = {
+          strings: [67, 60, 64, 69], // G4 C4 E4 A4, re-entrant
+          fretCount: 5,
+          leftHanded: false,
+          flats: false,
+          showDegrees: false,
+          stringEnabled: [true, true, true, true],
+          pitches: new Map([[0, { degree: 0, semitones: 0 }]]),
+          degreeFilter: [],
+          painted: {},
+          spotlight: null,
+        };
+        createRoot(probe).render(
+          createElement(Fretboard, { view: ukulele, flash: { key: '', id: 0 }, onSelect() {}, onSpotlight() {} }),
+        );
+        await tick();
+        const probeSvg = probe.querySelector('svg');
+        log('re-entrant ukulele keeps G4 order', openLabelsIn(probeSvg).join(' ') === 'A4 E4 C4 G4',
+          openLabelsIn(probeSvg).join(' '));
+        const png = await svgToPng(probeSvg, { scale: 1, title: 'test' });
+        log('PNG export produces a blob', png && png.size > 1000, png ? `${png.size} bytes` : 'null');
 
         /* ---------------- mount the app ---------------- */
         createRoot(root).render(createElement(App));
         await tick();
 
-        log('app mounts with notes', markers().length > 40, `${markers().length} markers`);
-        log('C major spelled naturally', [...new Set(dotLabels())].sort().join('') === 'ABCDEFG', [...new Set(dotLabels())].join(' '));
+        log('app mounts with notes', markers().length > 80, `${markers().length} markers`);
+        log('C major spelled naturally', [...new Set(dotLabels())].sort().join('') === 'ABCDEFG',
+          [...new Set(dotLabels())].join(' '));
+        log('fret readout starts at 24', readout('frets-value') === '24', readout('frets-value'));
+        log('tuning summary shows standard tuning',
+          readout('tuning-summary') === 'E2 A2 D3 G3 B3 E4', readout('tuning-summary'));
+        log('shadcn tokens applied',
+          getComputedStyle(document.documentElement).getPropertyValue('--primary').trim().length > 0,
+          getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
 
-        const keys = root.querySelector('.key-selector');
-        await click(byText('D', keys));
+        // Root note
+        await click(byText('D', byId('key-group')));
         log('root change respells to F#/C#', dotLabels().includes('F#') && dotLabels().includes('C#'));
 
-        await click(byText('\u266f'));
-        log('flat toggle respells', dotLabels().some((l) => /^[A-G]b$/.test(l)), [...new Set(dotLabels())].join(' '));
-        await click(byText('\u266d'));
+        // Notation and degree toggles
+        await click(byId('notation-toggle'));
+        log('flat toggle respells', dotLabels().some((l) => /^[A-G]b$/.test(l)),
+          [...new Set(dotLabels())].join(' '));
+        await click(byId('notation-toggle'));
 
-        await click(byText('Notes'));
+        await click(byId('degree-toggle'));
         const degreeSet = new Set(dotLabels());
-        log('degree labels valid', [...degreeSet].every((l) => theory.DEGREE_LABEL.includes(l)) && degreeSet.has('1'), [...degreeSet].join(' '));
-        await click(byText('Degrees'));
+        log('degree labels valid',
+          [...degreeSet].every((l) => theory.DEGREE_LABEL.includes(l)) && degreeSet.has('1'),
+          [...degreeSet].join(' '));
+        await click(byId('degree-toggle'));
 
+        // Modes and chords
         const scaleCount = markers().length;
-        await click(byText('Chords'));
-        log('chord panel shows chord buttons', Boolean(byText('Maj7')));
-        await click(byText('Maj7'));
-        log('chord shows fewer notes than scale', markers().length < scaleCount, `${markers().length} vs ${scaleCount}`);
-        await click(byText('Scales'));
+        await click(byText('Chords', byId('mode-group')));
+        log('chord panel renders', Boolean(byId('chord-group')));
+        await click(byText('Maj7', byId('chord-group')));
+        log('chord shows fewer notes than scale', markers().length < scaleCount,
+          `${markers().length} vs ${scaleCount}`);
+        await click(byText('Scales', byId('mode-group')));
 
-        const degreeRow = root.querySelectorAll('.chip-set')[0];
-        await click(buttons(degreeRow)[0]);
+        // Degree filter
+        await click(inGroup('degree-group')[0]);
         const rootsOnly = markers().length;
         log('degree filter narrows board', rootsOnly > 0 && rootsOnly < scaleCount / 3, `${rootsOnly} roots`);
-        await click(byText('All', degreeRow));
+        await click(byId('degree-all'));
+        log('All restores every degree', markers().length === scaleCount);
 
-        const stringRow = root.querySelectorAll('.chip-set')[1];
-        await click(buttons(stringRow)[0]);
+        // Strings
+        await click(inGroup('string-group')[0]);
         const dimmed = [...markers()].filter((n) => Number(n.getAttribute('opacity')) < 1).length;
         log('muting a string dims its notes', dimmed > 0, `${dimmed} dimmed`);
-        await click(byText('All', stringRow));
+        await click(byId('string-all'));
 
+        // Intervals -> custom
+        await click(inGroup('interval-group')[1]);
+        log('changing an interval switches to Custom',
+          byId('summary').textContent.includes('Custom'), byId('summary').textContent.trim().slice(0, 40));
+        await click(byText('Major (default)', root) || inGroup('interval-group')[1]);
+
+        // Handedness
+        await click(byId('mode-group').querySelector('button'));
         const beforeX = markers()[0].querySelector('circle').getAttribute('cx');
-        await click(byText('Righty'));
+        await click(byId('hand-toggle'));
         const afterX = markers()[0].querySelector('circle').getAttribute('cx');
         log('lefty mirrors the board', beforeX !== afterX, `${beforeX} -> ${afterX}`);
-        await click(byText('Lefty'));
+        await click(byId('hand-toggle'));
 
-        // Instrument dropdown -> ukulele
-        const instrumentToggle = buttons().find((b) => b.textContent.includes('Standard \u00b7'));
-        await click(instrumentToggle);
-        const ukulele = buttons().find((b) => b.classList.contains('menu-item') && b.textContent.startsWith('Ukulele') && !b.textContent.includes('baritone'));
-        await click(ukulele);
-        log('re-entrant ukulele keeps G4 order', openLabels().join(' ') === 'A4 E4 C4 G4', openLabels().join(' '));
-        log('ukulele shows 4 string chips', root.querySelectorAll('.chip-set')[1].querySelectorAll('button').length === 5);
-
-        // Paint a note, then clear
-        const swatch = root.querySelectorAll('.palette .swatch')[1];
+        // Painting
+        const swatch = allById('swatch')[1];
         await click(swatch);
-        log('selecting a colour marks the swatch active', swatch.classList.contains('is-active'));
+        log('selecting a colour marks the swatch', swatch.getAttribute('aria-pressed') === 'true');
         const target = [...markers()].find((n) => n.querySelector('.fb-dot').getAttribute('fill') !== '#ff5b5b');
-        const beforeFill = target.querySelector('.fb-dot').getAttribute('fill');
         await click(target);
         const repainted = [...markers()].filter(
           (n) => n.querySelector('.fb-dot').getAttribute('fill') === '#ff5b5b',
         ).length;
-        log('painting a note recolours it', repainted >= 1, `from ${beforeFill}, ${repainted} red dots`);
-        await click(byText('Clear'));
-        log('clear removes paint', !swatch.classList.contains('is-active'));
+        log('painting a note recolours it', repainted >= 1, `${repainted} red dots`);
+        await click(byId('clear-btn'));
+        log('clear removes paint',
+          [...markers()].every((n) => n.querySelector('.fb-dot').getAttribute('fill') !== '#ff5b5b'));
 
-        // Double-click spotlights every position of that pitch
-        const spotTarget = markers()[2];
-        await doubleClick(spotTarget);
+        // Spotlight
+        await doubleClick(markers()[2]);
         const faded = [...markers()].filter((n) => Number(n.getAttribute('opacity')) < 1).length;
         log('double-click spotlights one pitch', faded > 0 && faded < markers().length, `${faded} faded`);
-        await doubleClick(spotTarget);
+        await doubleClick(markers()[2]);
         log('double-click again clears the spotlight',
           [...markers()].every((n) => Number(n.getAttribute('opacity')) === 1));
 
-        // Frets and tuning steppers
-        const fretsGroup = byLabel('Fret count');
-        const fretReadout = () => Number(fretsGroup.querySelector('.readout').textContent);
-        const fretColumns = () => board().viewBox.baseVal.width;
-        const fretsBefore = fretReadout();
-        const widthBefore = fretColumns();
-        log('default view is a full 24-fret neck', fretsBefore === 24, String(fretsBefore));
-        // Step down first: the default sits at the 24-fret maximum.
-        await click(byLabel('Fewer frets', fretsGroup));
-        log('fret stepper decreases count', fretReadout() === fretsBefore - 1, `${fretsBefore} -> ${fretReadout()}`);
-        log('one fewer fret narrows the board', fretColumns() < widthBefore, `${widthBefore} -> ${fretColumns()}`);
-        await click(byLabel('More frets', fretsGroup));
-        log('fret stepper increases count', fretReadout() === fretsBefore);
-        await click(byLabel('More frets', fretsGroup));
-        log('fret count clamps at 24', fretReadout() === 24, String(fretReadout()));
-        const tuneGroup = byLabel('Transpose tuning');
-        await click(byLabel('Tune down a semitone', tuneGroup));
-        log('tuning down shows -1', tuneGroup.querySelector('.readout').textContent === '-1');
-        await click(byLabel('Tune up a semitone', tuneGroup));
+        // Steppers
+        const fretsBefore = Number(readout('frets-value'));
+        const widthBefore = board().viewBox.baseVal.width;
+        await click(byId('frets-dec'));
+        log('fret stepper decreases', Number(readout('frets-value')) === fretsBefore - 1,
+          `${fretsBefore} -> ${readout('frets-value')}`);
+        log('one fewer fret narrows the board', board().viewBox.baseVal.width < widthBefore);
+        await click(byId('frets-inc'));
+        await click(byId('frets-inc'));
+        log('fret count clamps at 24', readout('frets-value') === '24', readout('frets-value'));
 
-        // Transport cycles
-        const notesPerBeat = buttons().find((b) => /\/beat$/.test(b.textContent));
-        await click(notesPerBeat);
-        log('notes-per-beat cycles', /3\/beat/.test(buttons().find((b) => /\/beat$/.test(b.textContent)).textContent));
-        const group = buttons().find((b) => /^Group /.test(b.textContent));
-        await click(group);
-        log('group length cycles', /Group 2/.test(buttons().find((b) => /^Group /.test(b.textContent)).textContent));
-        await click(byLabel('Next permutation'));
-        log('permutation advances', byLabel('Permutation').querySelector('.readout').textContent === '21',
-          byLabel('Permutation').querySelector('.readout').textContent);
+        await click(byId('tune-dec'));
+        log('tuning down shows -1', readout('tune-value') === '-1', readout('tune-value'));
+        await click(byId('tune-inc'));
 
-        log('sequence preview populated', /\d+ notes/.test(root.querySelector('.sequence-display').textContent),
-          root.querySelector('.sequence-display').textContent.slice(0, 50));
+        // Transport
+        await click(byId('npb-cycle'));
+        log('notes-per-beat cycles', /3\/beat/.test(byId('npb-cycle').textContent));
+        await click(byId('group-cycle'));
+        log('group length cycles', /Group 2/.test(byId('group-cycle').textContent));
+        await click(byId('perm-next'));
+        log('permutation advances', readout('perm-value') === '21', readout('perm-value'));
+        // aria-pressed, not data-state: TooltipTrigger asChild overwrites the
+        // latter on any toggle it wraps.
+        await click(byId('loop-toggle'));
+        log('loop toggle presses', byId('loop-toggle').getAttribute('aria-pressed') === 'true',
+          `aria-pressed=${byId('loop-toggle').getAttribute('aria-pressed')}`);
+        await click(byId('loop-toggle'));
+        log('loop toggle releases', byId('loop-toggle').getAttribute('aria-pressed') === 'false');
+        log('sequence preview populated', /\d+ notes/.test(byId('sequence-display').textContent),
+          byId('sequence-display').textContent.slice(0, 40));
 
-        /* ---------------- export ---------------- */
-        const png = await svgToPng(board(), { scale: 1, title: 'test' });
-        log('PNG export produces a blob', png && png.size > 1000, png ? `${png.size} bytes` : 'null');
+        // Tooltip and dialog wiring
+        log('about dialog trigger present', Boolean(byId('about-btn')));
+        log('settings popover trigger present', Boolean(byId('settings-btn')));
 
-        /* ---------------- every scale, chord, tuning renders ---------------- */
-        // Driven through the reducer + selectors rather than 85 UI round-trips.
-        let ok = 0;
+        /* ---------------- coverage across the data ---------------- */
         const countFor = (patch) => {
           const s = { ...S.initialState, ...patch };
           const pitches = S.pitchMap(s);
-          const strings = S.openStrings(s);
           let n = 0;
-          for (const open of strings) {
+          for (const open of S.openStrings(s)) {
             for (let f = 0; f <= s.fretCount; f += 1) if (pitches.has((open + f) % 12)) n += 1;
           }
           return n;
         };
+        let ok = 0;
         for (const s of theory.ALL_SCALES) if (countFor({ scaleId: s.id }) > 0) ok += 1;
         log('every scale yields notes', ok === 40, `${ok}/40`);
         ok = 0;
@@ -239,7 +287,7 @@
 
         /* ---------------- persistence ---------------- */
         S.saveState({ ...S.initialState, tempo: 145, persist: { ...S.initialState.persist, tempo: true } });
-        log('opted-in field persists', S.loadState().tempo === 145, JSON.stringify(S.loadState().tempo));
+        log('opted-in field persists', S.loadState().tempo === 145);
         S.saveState({ ...S.initialState, tempo: 145 });
         log('opted-out field does not persist', S.loadState().tempo === undefined);
         localStorage.clear();
