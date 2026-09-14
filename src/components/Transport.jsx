@@ -16,7 +16,8 @@ import { CLICK_RHYTHMS, MetronomeClock, findMeter } from '@/lib/sequencer.js';
 import { audio } from '@/lib/audio.js';
 import { clampTempo, useTapTempo, useTempoScrub } from '@/hooks/useTempo.js';
 
-export function Transport({ state, dispatch, isPlaying, onToggle }) {
+/** Tempo controls: metronome toggle, tempo display, and stepper. */
+export function TempoCluster({ state, dispatch, isPlaying }) {
   const setTempo = (tempo) => dispatch({ type: 'patch', patch: { tempo } });
 
   // A standalone click track, independent of the note sequencer, so the
@@ -84,8 +85,7 @@ export function Transport({ state, dispatch, isPlaying, onToggle }) {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Cluster role="group" aria-label="Tempo">
+    <Cluster role="group" aria-label="Tempo">
         <Hint label="Tap to set tempo">
           <Toggle
             size="sm"
@@ -154,6 +154,13 @@ export function Transport({ state, dispatch, isPlaying, onToggle }) {
           onTap={handlePanelTap}
         />
       </Cluster>
+  );
+}
+
+export function Transport({ state, dispatch, isPlaying, onToggle }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Transport placeholder - controls moved elsewhere */}
     </div>
   );
 }

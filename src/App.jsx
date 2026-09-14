@@ -22,7 +22,7 @@ import {
 } from '@/lib/state.js';
 import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
-import { Transport, Playback } from './components/Transport.jsx';
+import { TempoCluster, Playback } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
 import { Hint, PICKED_SOLID } from './components/Ui.jsx';
@@ -153,14 +153,9 @@ export default function App() {
       <div className="mx-auto flex max-w-[1600px] flex-col gap-3 p-3 pb-10">
         <header className="flex flex-wrap items-start gap-3">
           <div className="flex flex-1 flex-col gap-2">
-            <Transport
-              state={state}
-              dispatch={dispatch}
-              isPlaying={isPlaying}
-              onToggle={toggle}
-            />
-
             <div className="flex flex-wrap items-center gap-2">
+              <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
+
               <ToggleGroup
                 type="single"
                 variant="outline"
