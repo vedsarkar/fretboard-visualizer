@@ -104,6 +104,50 @@ export function buildSequence(pool, { length = 1, jump = 1, perm = [0], directio
   }
 }
 
+/** Standalone click track: just the metronome, no notes. Accents beat 1 of 4. */
+export class MetronomeClock {
+  constructor(audio) {
+    this.audio = audio;
+    this.playing = false;
+    this.tempo = 90;
+    this._timer = null;
+    this._beatIndex = 0;
+  }
+
+  setTempo(tempo) {
+    this.tempo = tempo;
+  }
+
+  start(tempo = this.tempo) {
+    if (this.playing) return;
+    this.tempo = tempo;
+    this.audio.ensure();
+    this.playing = true;
+    this._beatIndex = 0;
+    this._nextBeatTime = this.audio.time + 0.1;
+    this._timer = window.setInterval(() => this._schedule(), TICK_MS);
+    this._schedule();
+  }
+
+  stop() {
+    if (!this.playing) return;
+    this.playing = false;
+    window.clearInterval(this._timer);
+    this._timer = null;
+  }
+
+  _schedule() {
+    if (!this.playing) return;
+    const horizon = this.audio.time + LOOKAHEAD_SECONDS;
+    const beat = 60 / this.tempo;
+    while (this._nextBeatTime < horizon) {
+      this.audio.click(this._nextBeatTime, this._beatIndex % 4 === 0);
+      this._beatIndex += 1;
+      this._nextBeatTime += beat;
+    }
+  }
+}
+
 export class Sequencer {
   constructor(audio) {
     this.audio = audio;

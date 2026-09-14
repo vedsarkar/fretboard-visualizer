@@ -27,7 +27,6 @@ import { Transport } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
-import { AboutPanel } from './components/AboutPanel.jsx';
 import { Hint, PICKED_SOLID } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
@@ -158,13 +157,6 @@ export default function App() {
     <TooltipProvider delayDuration={350}>
       <div className="mx-auto flex max-w-[1600px] flex-col gap-3 p-3 pb-10">
         <header className="flex flex-wrap items-start gap-3">
-          <div className="flex items-center gap-1">
-            <h1 className="text-2xl leading-none font-bold tracking-tight text-primary">
-              Freetboard
-            </h1>
-            <AboutPanel />
-          </div>
-
           <div className="flex flex-1 flex-col gap-2">
             <Transport
               state={state}
