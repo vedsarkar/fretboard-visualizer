@@ -26,7 +26,6 @@ import { Fretboard } from './components/Fretboard.jsx';
 import { Transport } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
-import { SettingsPanel } from './components/SettingsPanel.jsx';
 import { Hint, PICKED_SOLID } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
@@ -216,7 +215,6 @@ export default function App() {
                     Export
                   </Button>
                 </Hint>
-                <SettingsPanel state={state} dispatch={dispatch} />
               </div>
             </div>
           </div>

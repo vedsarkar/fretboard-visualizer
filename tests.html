@@ -361,9 +361,6 @@
         log('sequence preview populated', /\d+ notes/.test(byId('sequence-display').textContent),
           byId('sequence-display').textContent.slice(0, 40));
 
-        // Tooltip and dialog wiring
-        log('settings popover trigger present', Boolean(byId('settings-btn')));
-
         /* ---------------- coverage across the data ---------------- */
         const countFor = (patch) => {
           const s = { ...S.initialState, ...patch };
