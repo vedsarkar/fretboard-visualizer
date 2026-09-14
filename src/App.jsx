@@ -154,8 +154,6 @@ export default function App() {
         <header className="flex flex-wrap items-start gap-3">
           <div className="flex flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
-
               <ToggleGroup
                 type="single"
                 variant="outline"
@@ -173,6 +171,8 @@ export default function App() {
               </ToggleGroup>
 
               <div className="ml-auto flex items-center gap-2">
+                <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
+
                 <Hint label="Download the diagram as a PNG">
                   <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
                     <Download />
