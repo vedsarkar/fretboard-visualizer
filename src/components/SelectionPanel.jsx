@@ -144,7 +144,7 @@ export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3">
       {state.mode === 'scales' ? (
-        <>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <ScaleGroups state={state} dispatch={dispatch} />
           <div className="flex flex-wrap items-center gap-1.5">
             <Cap>Intervals</Cap>
@@ -171,7 +171,7 @@ export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
               ))}
             </ToggleGroup>
           </div>
-        </>
+        </div>
       ) : (
         <Chords state={state} dispatch={dispatch} />
       )}
