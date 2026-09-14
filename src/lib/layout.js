@@ -6,24 +6,26 @@
  */
 
 /** Every note in the selection uses one colour; painted notes override it. */
-export const NOTE_COLOR = '#e3e3e3';
+export const NOTE_COLOR = '#000000';
 
 export const PAINT_COLORS = ['#ffffff', '#ff5b5b', '#ffb300', '#5ad469', '#38a3ff', '#b46bff'];
 
 export const FONT = 'ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
+/** Pentatonic-diagram palette: pale yellow neck, black grid and dots. */
 export const COLORS = {
-  board: '#221d19',
-  boardEdge: '#0e0c0a',
-  fret: '#7d7f83',
-  nut: '#e6e0d4',
-  inlay: '#3b342d',
-  string: '#b9bcc2',
+  board: '#f5efa0',
+  boardEdge: '#151200',
+  fret: '#181510',
+  nut: '#151200',
+  inlay: '#a6a68f',
+  string: '#2c2a1d',
   fretNumber: '#8d8d8d',
   fretNumberOn: '#e8e8e8',
   openLabel: '#9a9a9a',
   muted: '#4a4a4a',
-  noteText: '#000000',
+  noteText: '#ffffff',
+  rootRing: '#0070f2',
 };
 
 const BASE = {

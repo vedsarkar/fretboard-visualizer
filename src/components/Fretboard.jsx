@@ -17,7 +17,15 @@ const NoteMarker = memo(function NoteMarker({ note, radius, flashId, onSelect, o
       onDoubleClick={() => onSpotlight(note)}
     >
       {isRoot ? (
-        <circle cx={cx} cy={cy} r={radius + 3.5} fill="none" stroke={fill} strokeWidth={2} opacity={0.75} />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius + 3.5}
+          fill="none"
+          stroke={COLORS.rootRing}
+          strokeWidth={2.5}
+          opacity={0.9}
+        />
       ) : null}
       <circle
         key={flashId}
@@ -26,7 +34,7 @@ const NoteMarker = memo(function NoteMarker({ note, radius, flashId, onSelect, o
         cy={cy}
         r={radius}
         fill={fill}
-        stroke={note.fret === 0 ? '#f2f2f2' : 'rgba(0,0,0,0.45)'}
+        stroke={note.fret === 0 ? '#f2f2f2' : 'rgba(255,255,255,0.35)'}
         strokeWidth={note.fret === 0 ? 2 : 1}
       />
       <text
