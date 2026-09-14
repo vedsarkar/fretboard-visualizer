@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PITCH_FLAT, PITCH_SHARP, noteName, pitchClass } from '@/lib/theory.js';
@@ -139,7 +138,7 @@ export default function App() {
   }, [toggle]);
 
   const names = state.flats ? PITCH_FLAT : PITCH_SHARP;
-  const exportName = state.title.trim() || `${names[state.rootPc]} ${name}`;
+  const exportName = `${names[state.rootPc]} ${name}`;
 
   const onExport = async () => {
     const blob = await svgToPng(svgRef.current, { title: exportName });
@@ -200,15 +199,6 @@ export default function App() {
               </div>
 
               <div className="ml-auto flex items-center gap-2">
-                <Input
-                  className="h-8 w-40 text-xs"
-                  placeholder="Untitled view"
-                  aria-label="Diagram title"
-                  value={state.title}
-                  onChange={(event) =>
-                    dispatch({ type: 'patch', patch: { title: event.target.value } })
-                  }
-                />
                 <Hint label="Download the diagram as a PNG">
                   <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
                     <Download />

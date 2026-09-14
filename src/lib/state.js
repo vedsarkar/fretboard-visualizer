@@ -66,7 +66,6 @@ export const initialState = {
   painted: {},
   paintColor: null,
   spotlight: null,
-  title: '',
   tempo: 90,
   notesPerBeat: 2,
   octaves: 1,
@@ -260,7 +259,7 @@ export function positionsFor(state, midi) {
 /* ----------------------------------------------------------------- storage */
 
 export function saveState(state) {
-  const payload = { defaults: state.defaults, persist: state.persist, title: state.title };
+  const payload = { defaults: state.defaults, persist: state.persist };
   for (const [key] of PERSIST_FIELDS) {
     if (state.persist[key]) payload[key] = state[key];
   }
@@ -288,7 +287,6 @@ export function loadState() {
     tuningId: defaults.instrument,
     rootPc: defaults.root,
     scaleId: defaults.scale,
-    title: typeof payload.title === 'string' ? payload.title : '',
   };
   for (const [key] of PERSIST_FIELDS) {
     if (persist[key] && payload[key] !== undefined) patch[key] = payload[key];
