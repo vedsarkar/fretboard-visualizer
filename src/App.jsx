@@ -177,22 +177,6 @@ export default function App() {
                 </ToggleGroupItem>
               </ToggleGroup>
 
-              <div
-                className="min-w-40 flex-1 truncate rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground tabular-nums"
-                data-testid="sequence-display"
-                aria-live="polite"
-              >
-                {notes.length ? (
-                  <>
-                    <span className="font-semibold text-primary">{notes.length} notes </span>
-                    {notes.slice(0, 18).map((m) => noteName(m, state.flats)).join(' ')}
-                    {notes.length > 18 ? ' \u2026' : ''}
-                  </>
-                ) : (
-                  'No notes in range'
-                )}
-              </div>
-
               <div className="ml-auto flex items-center gap-2">
                 <Hint label="Download the diagram as a PNG">
                   <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
