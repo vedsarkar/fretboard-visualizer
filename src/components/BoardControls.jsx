@@ -1,4 +1,4 @@
-import { FlipHorizontal2, Music, Music2 } from 'lucide-react';
+import { FlipHorizontal2, Guitar, Music, Music2 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import {
   Select,
@@ -11,16 +11,6 @@ import {
 } from '@/components/ui/select';
 import { Hint, Stepper } from './Ui.jsx';
 import { INSTRUMENT_GROUPS, PITCH_FLAT, PITCH_SHARP } from '@/lib/theory.js';
-
-/** Figma picon:tuning (node 802:32722), traced from the exported asset. */
-const TuningForkIcon = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" {...props}>
-    <path
-      d="M6 0H9V12C12 16 15 16 18 12V0H21V12C21 21 6 21 6 12M12 15H15V24H12"
-      fill="currentColor"
-    />
-  </svg>
-);
 
 export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
   const names = state.flats ? PITCH_FLAT : PITCH_SHARP;
@@ -51,8 +41,10 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
 
         <Select value={state.tuningId} onValueChange={(id) => dispatch({ type: 'setTuning', id })}>
           <SelectTrigger size="sm" className="w-[260px]" data-testid="instrument-select">
-            <TuningForkIcon className="size-4 text-muted-foreground" />
-            <SelectValue placeholder="Instrument" />
+            <span className="flex items-center gap-1.5">
+              <Guitar className="size-4 shrink-0 text-muted-foreground" />
+              <SelectValue placeholder="Instrument" />
+            </span>
           </SelectTrigger>
           <SelectContent className="max-h-[60vh]">
             {INSTRUMENT_GROUPS.map((group) => (
