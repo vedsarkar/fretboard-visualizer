@@ -39,7 +39,7 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
       </Select>
 
       <Select value={state.tuningId} onValueChange={(id) => dispatch({ type: 'setTuning', id })}>
-        <SelectTrigger size="sm" className="ml-auto w-[260px]" data-testid="instrument-select">
+        <SelectTrigger size="sm" className="w-[260px]" data-testid="instrument-select">
           <SelectValue placeholder="Instrument" />
         </SelectTrigger>
         <SelectContent className="max-h-[60vh]">
@@ -59,7 +59,7 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
         </SelectContent>
       </Select>
 
-      <Hint label="Mirror the neck for left-handed players">
+      <Hint label="Mirror the neck for left-handed players" className="ml-auto">
         <Toggle
           size="sm"
           variant="outline"
