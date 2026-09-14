@@ -1,4 +1,4 @@
-import { FlipHorizontal2, Music, Music2 } from 'lucide-react';
+import { FlipHorizontal2, Music, Music2, Wand2 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import {
   Select,
@@ -41,7 +41,10 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
 
         <Select value={state.tuningId} onValueChange={(id) => dispatch({ type: 'setTuning', id })}>
           <SelectTrigger size="sm" className="w-[260px]" data-testid="instrument-select">
-            <SelectValue placeholder="Instrument" />
+            <span className="flex items-center gap-1.5">
+              <Wand2 className="size-4" />
+              <SelectValue placeholder="Instrument" />
+            </span>
           </SelectTrigger>
           <SelectContent className="max-h-[60vh]">
             {INSTRUMENT_GROUPS.map((group) => (
