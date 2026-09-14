@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Download, Guitar, Piano } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PITCH_FLAT, PITCH_SHARP, noteName, pitchClass } from '@/lib/theory.js';
 import { svgToPng } from '@/lib/layout.js';
@@ -22,10 +21,10 @@ import {
 } from '@/lib/state.js';
 import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
-import { TempoCluster, Playback } from './components/Transport.jsx';
+import { Playback } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
-import { Hint, PICKED_SOLID } from './components/Ui.jsx';
+import { Hint } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
 
@@ -149,35 +148,12 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={350}>
       <div className="mx-auto flex max-w-[1600px] flex-col gap-3 p-3 pb-10">
-        <header className="flex flex-wrap items-start gap-3">
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                size="sm"
-                value={state.mode}
-                onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
-                data-testid="mode-group"
-              >
-                <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
-                  <Guitar className="size-4" />
-                  Guitar
-                </ToggleGroupItem>
-                <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
-                  <Piano className="size-4" />
-                  Piano
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <div className="ml-auto flex items-center gap-2">
-                <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <SelectionPanel state={state} dispatch={dispatch} intervals={intervals} />
+        <SelectionPanel
+          state={state}
+          dispatch={dispatch}
+          intervals={intervals}
+          isPlaying={isPlaying}
+        />
 
         <section className="flex flex-col gap-2">
           <BoardControls

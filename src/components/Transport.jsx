@@ -157,14 +157,6 @@ export function TempoCluster({ state, dispatch, isPlaying }) {
   );
 }
 
-export function Transport({ state, dispatch, isPlaying, onToggle }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Transport placeholder - controls moved elsewhere */}
-    </div>
-  );
-}
-
 /** Playback controls for placing elsewhere (e.g., footer). */
 export function Playback({ isPlaying, onToggle, state, dispatch }) {
   return (
