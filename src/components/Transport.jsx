@@ -109,7 +109,7 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
             pressed={state.metronome}
             onPressedChange={handleMetronomeTap}
           >
-            <Metronome />
+            <Metronome className="size-4" />
           </Toggle>
         </Hint>
         <Hint label={clickPlaying ? 'Stop the click' : 'Play just the metronome click'}>
