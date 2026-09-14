@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Guitar, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -163,9 +163,11 @@ export default function App() {
                 data-testid="mode-group"
               >
                 <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
+                  <Guitar className="size-4" />
                   Guitar
                 </ToggleGroupItem>
                 <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
+                  <Music className="size-4" />
                   Piano
                 </ToggleGroupItem>
               </ToggleGroup>
