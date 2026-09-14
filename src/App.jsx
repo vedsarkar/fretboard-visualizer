@@ -162,11 +162,11 @@ export default function App() {
                 onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
                 data-testid="mode-group"
               >
-                <ToggleGroupItem value="scales" aria-label="Scales" className={PICKED_SOLID}>
-                  Scales
+                <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
+                  Guitar
                 </ToggleGroupItem>
-                <ToggleGroupItem value="chords" aria-label="Chords" className={PICKED_SOLID}>
-                  Chords
+                <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
+                  Piano
                 </ToggleGroupItem>
               </ToggleGroup>
 
