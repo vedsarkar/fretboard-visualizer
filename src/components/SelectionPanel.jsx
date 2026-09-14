@@ -139,63 +139,63 @@ function Chords({ state, dispatch }) {
 
 export function SelectionPanel({ state, dispatch, intervals, isPlaying }) {
   return (
-    <section className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card p-3">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={state.mode}
-        onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
-        data-testid="mode-group"
-      >
-        <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
-          <Guitar className="size-4" />
-          Guitar
-        </ToggleGroupItem>
-        <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
-          <Piano className="size-4" />
-          Piano
-        </ToggleGroupItem>
-      </ToggleGroup>
+    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={state.mode}
+          onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
+          data-testid="mode-group"
+        >
+          <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
+            <Guitar className="size-4" />
+            Guitar
+          </ToggleGroupItem>
+          <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
+            <Piano className="size-4" />
+            Piano
+          </ToggleGroupItem>
+        </ToggleGroup>
 
-      <div className="flex flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-2">
-        {state.mode === 'scales' ? (
-          <>
-            <ScaleGroups state={state} dispatch={dispatch} />
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Cap>Intervals</Cap>
-              <ToggleGroup
-                type="multiple"
-                variant="outline"
-                size="sm"
-                value={intervals.map(String)}
-                onValueChange={(values) =>
-                  dispatch({ type: 'setIntervals', semitones: values.map(Number) })
-                }
-                data-testid="interval-group"
-              >
-                {INTERVAL_LABEL.map((label, semitones) => (
-                  <Hint key={label} label={INTERVAL_NAME[semitones]}>
-                    <ToggleGroupItem
-                      value={String(semitones)}
-                      aria-label={INTERVAL_NAME[semitones]}
-                      className={PICKED}
-                    >
-                      {label}
-                    </ToggleGroupItem>
-                  </Hint>
-                ))}
-              </ToggleGroup>
-            </div>
-          </>
-        ) : (
-          <Chords state={state} dispatch={dispatch} />
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
-      </div>
+      {state.mode === 'scales' ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <ScaleGroups state={state} dispatch={dispatch} />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Cap>Intervals</Cap>
+            <ToggleGroup
+              type="multiple"
+              variant="outline"
+              size="sm"
+              value={intervals.map(String)}
+              onValueChange={(values) =>
+                dispatch({ type: 'setIntervals', semitones: values.map(Number) })
+              }
+              data-testid="interval-group"
+            >
+              {INTERVAL_LABEL.map((label, semitones) => (
+                <Hint key={label} label={INTERVAL_NAME[semitones]}>
+                  <ToggleGroupItem
+                    value={String(semitones)}
+                    aria-label={INTERVAL_NAME[semitones]}
+                    className={PICKED}
+                  >
+                    {label}
+                  </ToggleGroupItem>
+                </Hint>
+              ))}
+            </ToggleGroup>
+          </div>
+        </div>
+      ) : (
+        <Chords state={state} dispatch={dispatch} />
+      )}
     </section>
   );
 }
