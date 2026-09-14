@@ -6,7 +6,7 @@
  */
 
 /** Every note in the selection uses one colour; painted notes override it. */
-export const NOTE_COLOR = '#ffffff';
+export const NOTE_COLOR = '#e3e3e3';
 
 export const PAINT_COLORS = ['#ffffff', '#ff5b5b', '#ffb300', '#5ad469', '#38a3ff', '#b46bff'];
 
