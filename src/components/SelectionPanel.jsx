@@ -208,42 +208,6 @@ export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
             All
           </Button>
         </Cluster>
-
-        <Cluster role="group" aria-label="Strings">
-          <Cap>Strings</Cap>
-          <ToggleGroup
-            type="multiple"
-            size="sm"
-            value={enabledStrings.map(String)}
-            onValueChange={(values) =>
-              dispatch({ type: 'setStrings', on: values.map(Number), total: stringCount })
-            }
-            data-testid="string-group"
-          >
-            {Array.from({ length: stringCount }, (_, n) => {
-              const number = stringCount - n;
-              const index = n;
-              return (
-                <ToggleGroupItem
-                  key={index}
-                  value={String(index)}
-                  aria-label={`String ${number}`}
-                  className={MUTABLE}
-                >
-                  {number}
-                </ToggleGroupItem>
-              );
-            }).reverse()}
-          </ToggleGroup>
-          <Button
-            size="sm"
-            variant={state.stringsOff.length === 0 ? 'default' : 'ghost'}
-            data-testid="string-all"
-            onClick={() => dispatch({ type: 'clearStrings' })}
-          >
-            All
-          </Button>
-        </Cluster>
       </div>
     </section>
   );

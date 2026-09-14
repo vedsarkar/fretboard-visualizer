@@ -275,12 +275,6 @@
         await click(byId('degree-all'));
         log('All restores every degree', markers().length === scaleCount);
 
-        // Strings
-        await click(inGroup('string-group')[0]);
-        const dimmed = [...markers()].filter((n) => Number(n.getAttribute('opacity')) < 1).length;
-        log('muting a string dims its notes', dimmed > 0, `${dimmed} dimmed`);
-        await click(byId('string-all'));
-
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',
           openLabelsIn(board()).join(' '));
@@ -298,8 +292,6 @@
         log('eighth string adds a low F#1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1 F#1',
           openLabelsIn(board()).join(' '));
         log('string readout follows the count', readout('strings-value') === '8', readout('strings-value'));
-        log('string toggles cover all eight', inGroup('string-group').length === 8,
-          String(inGroup('string-group').length));
         await click(byId('strings-inc'));
         log('the stepper stops at eight', readout('strings-value') === '8', readout('strings-value'));
         await click(byId('strings-dec'));
