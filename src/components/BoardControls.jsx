@@ -1,4 +1,4 @@
-import { FlipHorizontal2 } from 'lucide-react';
+import { FlipHorizontal2, Music, Gauge } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import {
   Select,
@@ -99,7 +99,17 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
           pressed={state.showDegrees}
           onPressedChange={() => dispatch({ type: 'toggle', field: 'showDegrees' })}
         >
-          {state.showDegrees ? 'Degrees' : 'Notes'}
+          {state.showDegrees ? (
+            <>
+              <Gauge className="size-4" />
+              Degrees
+            </>
+          ) : (
+            <>
+              <Music className="size-4" />
+              Notes
+            </>
+          )}
         </Toggle>
       </Hint>
 
