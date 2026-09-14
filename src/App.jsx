@@ -202,7 +202,7 @@ export default function App() {
                 <Hint label="Download the diagram as a PNG">
                   <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
                     <Download />
-                    Export
+                    Download
                   </Button>
                 </Hint>
               </div>
