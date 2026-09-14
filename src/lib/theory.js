@@ -57,7 +57,7 @@ export const SCALE_GROUPS = [
     id: 'major',
     label: 'Major + Modes',
     scales: [
-      { id: 'ionian', name: 'Major (default)', intervals: [0, 2, 4, 5, 7, 9, 11] },
+      { id: 'ionian', name: 'Ionian', intervals: [0, 2, 4, 5, 7, 9, 11] },
       { id: 'dorian', name: 'Dorian', intervals: [0, 2, 3, 5, 7, 9, 10] },
       { id: 'phrygian', name: 'Phrygian', intervals: [0, 1, 3, 5, 7, 8, 10] },
       { id: 'lydian', name: 'Lydian', intervals: [0, 2, 4, 6, 7, 9, 11] },

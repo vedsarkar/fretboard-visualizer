@@ -303,7 +303,7 @@
         await click(inGroup('interval-group')[1]);
         log('changing an interval switches to Custom',
           byId('summary').textContent.includes('Custom'), byId('summary').textContent.trim().slice(0, 40));
-        await click(byText('Major (default)', root) || inGroup('interval-group')[1]);
+        await click(byText('Ionian', root) || inGroup('interval-group')[1]);
 
         // Handedness
         await click(byId('mode-group').querySelector('button'));
