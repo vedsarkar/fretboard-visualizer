@@ -17,49 +17,53 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={String(state.rootPc)}
-        onValueChange={(pc) => dispatch({ type: 'setRoot', pc: Number(pc) })}
-      >
-        <SelectTrigger size="sm" className="w-[124px]" aria-label="Root note" data-testid="root-select">
-          <span className="flex items-center gap-1.5">
-            <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-              Root
+      <div className="flex items-center gap-2">
+        <Select
+          value={String(state.rootPc)}
+          onValueChange={(pc) => dispatch({ type: 'setRoot', pc: Number(pc) })}
+        >
+          <SelectTrigger size="sm" className="w-[124px]" aria-label="Root note" data-testid="root-select">
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                Root
+              </span>
+              <SelectValue />
             </span>
-            <SelectValue />
-          </span>
-        </SelectTrigger>
-        <SelectContent>
-          {names.map((name, pc) => (
-            <SelectItem key={name} value={String(pc)} className="font-semibold">
-              {name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          </SelectTrigger>
+          <SelectContent>
+            {names.map((name, pc) => (
+              <SelectItem key={name} value={String(pc)} className="font-semibold">
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={state.tuningId} onValueChange={(id) => dispatch({ type: 'setTuning', id })}>
-        <SelectTrigger size="sm" className="w-[260px]" data-testid="instrument-select">
-          <SelectValue placeholder="Instrument" />
-        </SelectTrigger>
-        <SelectContent className="max-h-[60vh]">
-          {INSTRUMENT_GROUPS.map((group) => (
-            <SelectGroup key={group.id}>
-              <SelectLabel>{group.label}</SelectLabel>
-              {group.tunings.map((tuning) => (
-                <SelectItem key={tuning.id} value={tuning.id}>
-                  <span className="flex-1">{tuning.name}</span>
-                  <span className="ml-3 text-xs tabular-nums text-muted-foreground">
-                    {tuning.notes.join('-')}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={state.tuningId} onValueChange={(id) => dispatch({ type: 'setTuning', id })}>
+          <SelectTrigger size="sm" className="w-[260px]" data-testid="instrument-select">
+            <SelectValue placeholder="Instrument" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[60vh]">
+            {INSTRUMENT_GROUPS.map((group) => (
+              <SelectGroup key={group.id}>
+                <SelectLabel>{group.label}</SelectLabel>
+                {group.tunings.map((tuning) => (
+                  <SelectItem key={tuning.id} value={tuning.id}>
+                    <span className="flex-1">{tuning.name}</span>
+                    <span className="ml-3 text-xs tabular-nums text-muted-foreground">
+                      {tuning.notes.join('-')}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Hint label="Mirror the neck for left-handed players" className="ml-auto">
+      <div className="ml-auto" />
+
+      <Hint label="Mirror the neck for left-handed players">
         <Toggle
           size="sm"
           variant="outline"
