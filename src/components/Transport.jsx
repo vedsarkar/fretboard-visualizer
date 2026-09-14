@@ -7,16 +7,17 @@ import {
   Metronome,
   Play,
   Repeat,
-  Settings,
   Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import { Cap, Cluster, Hint } from './Ui.jsx';
+import { MetronomePanel } from './MetronomePanel.jsx';
 import { DIRECTIONS } from '@/lib/state.js';
-import { MetronomeClock, permutationLabel } from '@/lib/sequencer.js';
+import { CLICK_RHYTHMS, MetronomeClock, findMeter, permutationLabel } from '@/lib/sequencer.js';
 import { audio } from '@/lib/audio.js';
+import { clampTempo, useTapTempo, useTempoScrub } from '@/hooks/useTempo.js';
 
 /** Cycling control: shows its current value, advances on click. */
 function Cycle({ hint, value, onClick, testId }) {
@@ -29,12 +30,9 @@ function Cycle({ hint, value, onClick, testId }) {
   );
 }
 
-const TAP_TIMEOUT = 2000; // ms of silence before a fresh tap sequence starts
-const TAP_HISTORY = 6; // average over the last N gaps for a stable reading
-
 export function Transport({ state, dispatch, isPlaying, onToggle, permutation, permutationCount }) {
   const cycle = (field, values) => () => dispatch({ type: 'cycle', field, values });
-  const tapTimes = useRef([]);
+  const setTempo = (tempo) => dispatch({ type: 'patch', patch: { tempo } });
 
   // A standalone click track, independent of the note sequencer, so the
   // metronome can be previewed on its own.
@@ -42,9 +40,29 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
   if (!clickTrack.current) clickTrack.current = new MetronomeClock(audio);
   const [clickPlaying, setClickPlaying] = useState(false);
 
+  const meter = findMeter(state.meter);
+  const subdivision = CLICK_RHYTHMS.find(([id]) => id === state.rhythm)?.[1] ?? 1;
+
+  const tap = useTapTempo();
+  const dragTempo = useTempoScrub(state.tempo, setTempo);
+
   useEffect(() => {
     clickTrack.current.setTempo(state.tempo);
   }, [state.tempo]);
+
+  // Applied here rather than in the panel so the settings outlive the dialog.
+  useEffect(() => {
+    clickTrack.current.configure({
+      beats: meter.beats,
+      accents: meter.accents,
+      subdivision,
+      sound: state.clickSound,
+    });
+  }, [meter, subdivision, state.clickSound]);
+
+  useEffect(() => {
+    audio.setClickMix({ gainDb: state.clickVolumeDb, pan: state.clickPan });
+  }, [state.clickVolumeDb, state.clickPan]);
 
   useEffect(() => {
     // Don't let the standalone click and the sequencer's own metronome clash.
@@ -64,43 +82,20 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
   };
 
   /**
-   * The metronome button doubles as a tap-tempo pad: taps within TAP_TIMEOUT
-   * of each other set the tempo from their average interval. An isolated
-   * click (nothing recent to compare against) just toggles the click sound.
+   * The metronome button doubles as a tap-tempo pad: a rhythm of taps sets the
+   * tempo, while an isolated click (nothing recent to measure against) just
+   * toggles the click sound.
    */
   const handleMetronomeTap = () => {
-    const now = performance.now();
-    const times = tapTimes.current;
-    if (times.length && now - times[times.length - 1] > TAP_TIMEOUT) times.length = 0;
-    times.push(now);
-    if (times.length > TAP_HISTORY) times.shift();
-
-    if (times.length < 2) {
-      dispatch({ type: 'toggle', field: 'metronome' });
-      return;
-    }
-    const gaps = times.slice(1).map((t, i) => t - times[i]);
-    const avgGap = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
-    const bpm = Math.round(60000 / avgGap);
-    dispatch({ type: 'patch', patch: { tempo: Math.min(300, Math.max(30, bpm)) } });
+    const bpm = tap();
+    if (bpm === null) dispatch({ type: 'toggle', field: 'metronome' });
+    else setTempo(bpm);
   };
 
-  /** Drag up/down on the handle to scrub tempo; 2px of mouse travel per BPM. */
-  const dragTempo = (e) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startTempo = state.tempo;
-    const move = (moveEvent) => {
-      const delta = Math.round((startY - moveEvent.clientY) / 2);
-      const next = Math.min(300, Math.max(30, startTempo + delta));
-      dispatch({ type: 'patch', patch: { tempo: next } });
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+  /** The panel's pad is tap-only — it has a play button of its own. */
+  const handlePanelTap = () => {
+    const bpm = tap();
+    if (bpm !== null) setTempo(clampTempo(bpm));
   };
 
   return (
@@ -165,16 +160,14 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
           </Hint>
         </div>
         <Separator orientation="vertical" className="mx-0.5 !h-5" />
-        <Hint label="Tempo settings">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Tempo settings"
-            data-testid="tempo-settings"
-          >
-            <Settings />
-          </Button>
-        </Hint>
+        <MetronomePanel
+          state={state}
+          dispatch={dispatch}
+          clock={clickTrack.current}
+          playing={clickPlaying}
+          onTogglePlay={toggleClickTrack}
+          onTap={handlePanelTap}
+        />
       </Cluster>
 
       <Cluster role="group" aria-label="Playback">

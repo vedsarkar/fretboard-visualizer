@@ -68,7 +68,16 @@ export function useSequencer(state, onNote) {
     engine.loop = state.loop;
     engine.countIn = state.countIn;
     engine.metronome = state.metronome;
-  }, [notes, state.tempo, state.notesPerBeat, state.loop, state.countIn, state.metronome]);
+    engine.clickSound = state.clickSound;
+  }, [
+    notes,
+    state.tempo,
+    state.notesPerBeat,
+    state.loop,
+    state.countIn,
+    state.metronome,
+    state.clickSound,
+  ]);
 
   useEffect(() => () => sequencer.current?.stop(), []);
 

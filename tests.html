@@ -113,6 +113,43 @@
         log('perm count for 4 = 24', seq.permutations(4).length === 24);
         log('perm label', seq.permutationLabel([0, 2, 1, 3]) === '1324');
 
+        /* ---------------- metronome ---------------- */
+        log('4/4 counts four beats', seq.findMeter('4/4').beats === 4);
+        log('an unknown meter falls back to 4/4', seq.findMeter('nope').id === '4/4');
+        const sevens = seq.findMeter('7/8 (3+2+2)');
+        log('7/8 groups as 3+2+2', sevens.beats === 7 && sevens.accents.join(',') === '3,5');
+
+        // A silent stand-in: the clock only needs a clock and a click sink.
+        const taps = [];
+        const fakeAudio = {
+          time: 0,
+          ensure: () => {},
+          click: (when, level) => taps.push({ when, level }),
+        };
+        const clock = new seq.MetronomeClock(fakeAudio);
+        clock.configure({ beats: 7, accents: sevens.accents, subdivision: 1 });
+        log('the downbeat is the accent', clock.level(0, false) === 'accent');
+        log('group starts are stressed', clock.level(3, false) === 'group');
+        log('plain beats are plain', clock.level(1, false) === 'beat');
+        log('subdivisions stay quiet', clock.level(3, true) === 'sub');
+
+        // Two bars of 4/4 in eighths at 120bpm: 0.25s a click, 16 clicks in 4s.
+        // The scheduler only fills its lookahead window, so the clock has to be
+        // wound forward the way the audio context would advance it.
+        taps.length = 0;
+        clock.configure({ beats: 4, accents: [], subdivision: 2 });
+        clock.tempo = 120;
+        clock.playing = true;
+        clock._step = 0;
+        clock._nextStepTime = 0;
+        for (fakeAudio.time = 0; fakeAudio.time < 4; fakeAudio.time += 0.05) clock._schedule();
+        clock.playing = false;
+        const eighths = taps.filter((t) => t.when < 4);
+        log('eighths land twice a beat', eighths.length === 16, String(eighths.length));
+        log('every other eighth is offbeat', eighths[1].level === 'sub' && eighths[2].level === 'beat');
+        log('the bar restarts on the accent', eighths[8].level === 'accent',
+          eighths.slice(0, 9).map((t) => t.level[0]).join(''));
+
         /* ---------------- reducer ---------------- */
         const base = S.initialState;
         log('default is a 24-fret neck', base.fretCount === 24, String(base.fretCount));
@@ -360,6 +397,25 @@
         const stale = S.loadState();
         log('unknown tuning and scale fall back', stale.tuningId === 'standard' && stale.scaleId === 'ionian',
           `${stale.tuningId} / ${stale.scaleId}`);
+
+        S.saveState({
+          ...S.initialState,
+          meter: '7/8 (2+2+3)',
+          clickSound: 'cowbell',
+          persist: { ...S.initialState.persist, meter: true, clickSound: true },
+        });
+        const kept = S.loadState();
+        log('opted-in metronome settings persist',
+          kept.meter === '7/8 (2+2+3)' && kept.clickSound === 'cowbell',
+          `${kept.meter} / ${kept.clickSound}`);
+        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({
+          persist: { meter: true, rhythm: true, clickSound: true },
+          meter: '9/16', rhythm: '1/32', clickSound: 'gong',
+        }));
+        const junk = S.loadState();
+        log('unknown metronome settings fall back',
+          junk.meter === '4/4' && junk.rhythm === '1/4' && junk.clickSound === 'blip',
+          `${junk.meter} / ${junk.rhythm} / ${junk.clickSound}`);
         localStorage.clear();
       } catch (error) {
         log('uncaught error', false, `${error && error.message} | ${error && error.stack}`);

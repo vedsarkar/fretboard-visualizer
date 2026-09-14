@@ -10,6 +10,123 @@ import { midiToFreq } from './theory.js';
 
 const MAX_CACHED_BUFFERS = 64;
 const NOTE_SECONDS = 2.4;
+const NOISE_SECONDS = 0.3;
+
+/** Click timbres, all synthesised — no samples to ship. */
+export const CLICK_SOUNDS = [
+  ['blip', 'Blip'],
+  ['digital', 'Digital'],
+  ['woodblock', 'Woodblock'],
+  ['cowbell', 'Cowbell'],
+  ['rimshot', 'Rimshot'],
+];
+
+/**
+ * How loud and how bright each click role is. The downbeat cuts through, group
+ * starts sit just under it, plain beats are quieter and subdivisions barely
+ * register — enough to feel the grid without burying the beat.
+ */
+const CLICK_LEVELS = {
+  accent: { gain: 1, tone: 1.5 },
+  group: { gain: 0.7, tone: 1.25 },
+  beat: { gain: 0.5, tone: 1 },
+  sub: { gain: 0.26, tone: 0.85 },
+};
+
+function blip(ctx, at, shape, out) {
+  const osc = ctx.createOscillator();
+  const amp = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 1050 * shape.tone;
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(0.2 * shape.gain, at + 0.002);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+  osc.connect(amp).connect(out);
+  osc.start(at);
+  osc.stop(at + 0.07);
+}
+
+function digital(ctx, at, shape, out, noise) {
+  const source = ctx.createBufferSource();
+  const highpass = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+  source.buffer = noise;
+  highpass.type = 'highpass';
+  highpass.frequency.value = 3000 * shape.tone;
+  amp.gain.setValueAtTime(0.5 * shape.gain, at);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.02);
+  source.connect(highpass).connect(amp).connect(out);
+  source.start(at);
+  source.stop(at + 0.05);
+}
+
+function woodblock(ctx, at, shape, out) {
+  const osc = ctx.createOscillator();
+  const band = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+  osc.type = 'triangle';
+  // A quick downward chirp is what reads as struck wood rather than a tone.
+  osc.frequency.setValueAtTime(1500 * shape.tone, at);
+  osc.frequency.exponentialRampToValueAtTime(900 * shape.tone, at + 0.03);
+  band.type = 'bandpass';
+  band.frequency.value = 1200 * shape.tone;
+  band.Q.value = 3;
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(0.45 * shape.gain, at + 0.002);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.045);
+  osc.connect(band).connect(amp).connect(out);
+  osc.start(at);
+  osc.stop(at + 0.07);
+}
+
+function cowbell(ctx, at, shape, out) {
+  const band = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+  band.type = 'bandpass';
+  band.frequency.value = 850 * shape.tone;
+  band.Q.value = 2.5;
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(0.3 * shape.gain, at + 0.003);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+  band.connect(amp).connect(out);
+  // Two squares a fifth-ish apart beat against each other into a hollow clang.
+  for (const freq of [800, 1200]) {
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = freq * shape.tone;
+    osc.connect(band);
+    osc.start(at);
+    osc.stop(at + 0.18);
+  }
+}
+
+function rimshot(ctx, at, shape, out, noise) {
+  const source = ctx.createBufferSource();
+  const band = ctx.createBiquadFilter();
+  const amp = ctx.createGain();
+  source.buffer = noise;
+  band.type = 'bandpass';
+  band.frequency.value = 2200 * shape.tone;
+  band.Q.value = 1.6;
+  amp.gain.setValueAtTime(0.55 * shape.gain, at);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.035);
+  source.connect(band).connect(amp).connect(out);
+  source.start(at);
+  source.stop(at + 0.06);
+
+  const ping = ctx.createOscillator();
+  const pingAmp = ctx.createGain();
+  ping.type = 'sine';
+  ping.frequency.value = 420 * shape.tone;
+  pingAmp.gain.setValueAtTime(0.0001, at);
+  pingAmp.gain.exponentialRampToValueAtTime(0.22 * shape.gain, at + 0.002);
+  pingAmp.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
+  ping.connect(pingAmp).connect(out);
+  ping.start(at);
+  ping.stop(at + 0.07);
+}
+
+const CLICK_VOICES = { blip, digital, woodblock, cowbell, rimshot };
 
 export class AudioEngine {
   constructor() {
@@ -17,6 +134,12 @@ export class AudioEngine {
     this.master = null;
     this.buffers = new Map();
     this.active = new Set();
+    // Clicks get their own bus so the metronome can be mixed and panned
+    // without touching the notes.
+    this.clickGain = null;
+    this.clickPan = null;
+    this.clickMix = { gainDb: 0, pan: 0 };
+    this.noise = null;
   }
 
   /** Browsers require a user gesture before audio can start. */
@@ -31,9 +154,41 @@ export class AudioEngine {
       limiter.knee.value = 6;
       limiter.ratio.value = 8;
       this.master.connect(limiter).connect(this.ctx.destination);
+
+      this.clickGain = this.ctx.createGain();
+      this.clickPan = this.ctx.createStereoPanner();
+      this.clickGain.connect(this.clickPan).connect(this.master);
+      this._applyClickMix();
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
     return this.ctx;
+  }
+
+  /**
+   * @param {object} patch
+   * @param {number} [patch.gainDb] click level in dB, 0 is unity
+   * @param {number} [patch.pan]    -1 hard left .. 1 hard right
+   */
+  setClickMix(patch) {
+    Object.assign(this.clickMix, patch);
+    this._applyClickMix();
+  }
+
+  _applyClickMix() {
+    if (!this.clickGain) return;
+    this.clickGain.gain.value = 10 ** (this.clickMix.gainDb / 20);
+    this.clickPan.pan.value = Math.max(-1, Math.min(1, this.clickMix.pan));
+  }
+
+  /** One shared noise buffer feeds every noise-based click. */
+  noiseBuffer() {
+    if (this.noise) return this.noise;
+    const ctx = this.ensure();
+    const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * NOISE_SECONDS), ctx.sampleRate);
+    const out = buffer.getChannelData(0);
+    for (let i = 0; i < out.length; i += 1) out[i] = Math.random() * 2 - 1;
+    this.noise = buffer;
+    return buffer;
   }
 
   get time() {
@@ -114,19 +269,17 @@ export class AudioEngine {
     return voice;
   }
 
-  click(when = 0, accent = false) {
+  /**
+   * @param {number} when    context time, defaults to now
+   * @param {'accent'|'group'|'beat'|'sub'} [level]
+   * @param {string} [sound] a key of CLICK_SOUNDS
+   */
+  click(when = 0, level = 'beat', sound = 'blip') {
     const ctx = this.ensure();
     const at = when || ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const amp = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = accent ? 1600 : 1050;
-    amp.gain.setValueAtTime(0.0001, at);
-    amp.gain.exponentialRampToValueAtTime(accent ? 0.28 : 0.16, at + 0.002);
-    amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.05);
-    osc.connect(amp).connect(this.master);
-    osc.start(at);
-    osc.stop(at + 0.07);
+    const shape = CLICK_LEVELS[level] ?? CLICK_LEVELS.beat;
+    const voice = CLICK_VOICES[sound] ?? CLICK_VOICES.blip;
+    voice(ctx, at, shape, this.clickGain, this.noiseBuffer());
   }
 
   stopAll() {

@@ -10,6 +10,8 @@ import {
   findScale,
   findTuning,
 } from './theory.js';
+import { CLICK_RHYTHMS, METERS } from './sequencer.js';
+import { CLICK_SOUNDS } from './audio.js';
 
 export const STORAGE_KEY = 'freetboard.react.v1';
 
@@ -38,6 +40,11 @@ export const PERSIST_FIELDS = [
   ['fretCount', 'Fret count'],
   ['flats', 'Sharps / flats'],
   ['showDegrees', 'Note / degree'],
+  ['meter', 'Time signature'],
+  ['rhythm', 'Click rhythm'],
+  ['clickSound', 'Click sound'],
+  ['clickVolumeDb', 'Click volume'],
+  ['clickPan', 'Click pan'],
 ];
 
 export const initialState = {
@@ -70,6 +77,11 @@ export const initialState = {
   loop: false,
   countIn: false,
   metronome: false,
+  meter: '4/4',
+  rhythm: '1/4',
+  clickSound: 'blip',
+  clickVolumeDb: 0,
+  clickPan: 0,
   defaults: { instrument: 'standard', root: 0, scale: 'ionian' },
   persist: Object.fromEntries(PERSIST_FIELDS.map(([key]) => [key, false])),
 };
@@ -285,5 +297,13 @@ export function loadState() {
   if (!findScale(patch.scaleId)) patch.scaleId = 'ionian';
   // The transport labels its button by looking this id up, so it has to resolve.
   if (patch.direction && !DIRECTIONS.some(([id]) => id === patch.direction)) patch.direction = 'up';
+  // Same for the metronome's list-backed settings.
+  if (patch.meter && !METERS.some((m) => m.id === patch.meter)) patch.meter = initialState.meter;
+  if (patch.rhythm && !CLICK_RHYTHMS.some(([id]) => id === patch.rhythm)) {
+    patch.rhythm = initialState.rhythm;
+  }
+  if (patch.clickSound && !CLICK_SOUNDS.some(([id]) => id === patch.clickSound)) {
+    patch.clickSound = initialState.clickSound;
+  }
   return patch;
 }
