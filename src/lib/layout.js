@@ -6,7 +6,7 @@
  */
 
 /** Every note in the selection uses one colour; painted notes override it. */
-export const NOTE_COLOR = '#0070f2';
+export const NOTE_COLOR = '#ffffff';
 
 export const PAINT_COLORS = ['#ffffff', '#ff5b5b', '#ffb300', '#5ad469', '#38a3ff', '#b46bff'];
 
@@ -23,7 +23,7 @@ export const COLORS = {
   fretNumberOn: '#e8e8e8',
   openLabel: '#9a9a9a',
   muted: '#4a4a4a',
-  noteText: '#ffffff',
+  noteText: '#000000',
 };
 
 const BASE = {
