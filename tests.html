@@ -252,14 +252,9 @@
           [...degreeSet].join(' '));
         await click(byId('degree-toggle'));
 
-        // Modes and chords
-        const scaleCount = markers().length;
+        // Piano mode is disabled ("Coming soon") and shouldn't switch on click
         await click(byText('Piano', byId('mode-group')));
-        log('chord panel renders', Boolean(byId('chord-group')));
-        await click(byText('Maj7', byId('chord-group')));
-        log('chord shows fewer notes than scale', markers().length < scaleCount,
-          `${markers().length} vs ${scaleCount}`);
-        await click(byText('Guitar', byId('mode-group')));
+        log('disabled Piano toggle does not switch modes', !byId('chord-group'));
 
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',

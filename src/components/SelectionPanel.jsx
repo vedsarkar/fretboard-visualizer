@@ -146,17 +146,25 @@ export function SelectionPanel({ state, dispatch, intervals, isPlaying }) {
           variant="outline"
           size="sm"
           value={state.mode}
-          onValueChange={(mode) => mode && dispatch({ type: 'setMode', mode })}
+          onValueChange={(mode) => mode && mode !== 'chords' && dispatch({ type: 'setMode', mode })}
           data-testid="mode-group"
         >
           <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
             <Guitar className="size-4" />
             Guitar
           </ToggleGroupItem>
-          <ToggleGroupItem value="chords" aria-label="Piano" className={PICKED_SOLID}>
-            <Piano className="size-4" />
-            Piano
-          </ToggleGroupItem>
+          <Hint label="Coming soon">
+            <ToggleGroupItem
+              value="chords"
+              aria-label="Piano"
+              aria-disabled="true"
+              data-testid="mode-piano"
+              className="cursor-not-allowed opacity-50 hover:bg-transparent hover:text-inherit"
+            >
+              <Piano className="size-4" />
+              Piano
+            </ToggleGroupItem>
+          </Hint>
         </ToggleGroup>
 
         <div className="ml-auto flex items-center gap-2">
