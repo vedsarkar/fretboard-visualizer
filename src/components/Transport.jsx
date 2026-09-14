@@ -86,17 +86,6 @@ export function TempoCluster({ state, dispatch, isPlaying }) {
 
   return (
     <Cluster role="group" aria-label="Tempo">
-        <Hint label="Tap to set tempo">
-          <Toggle
-            size="sm"
-            aria-label="Metronome (tap repeatedly to set tempo)"
-            data-testid="metro-toggle"
-            pressed={state.metronome}
-            onPressedChange={handleMetronomeTap}
-          >
-            <Metronome className="size-4" />
-          </Toggle>
-        </Hint>
         <Hint label={clickPlaying ? 'Stop the click' : 'Play just the metronome click'}>
           <Button
             variant={clickPlaying ? 'default' : 'ghost'}
@@ -108,6 +97,17 @@ export function TempoCluster({ state, dispatch, isPlaying }) {
           >
             {clickPlaying ? <Square /> : <Play />}
           </Button>
+        </Hint>
+        <Hint label="Tap to set tempo">
+          <Toggle
+            size="sm"
+            aria-label="Metronome (tap repeatedly to set tempo)"
+            data-testid="metro-toggle"
+            pressed={state.metronome}
+            onPressedChange={handleMetronomeTap}
+          >
+            <Metronome className="size-4" />
+          </Toggle>
         </Hint>
         <Separator orientation="vertical" className="mx-0.5 !h-5" />
         <span
