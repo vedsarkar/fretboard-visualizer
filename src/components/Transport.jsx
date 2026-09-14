@@ -101,7 +101,7 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Cluster role="group" aria-label="Tempo">
-        <Hint label="Click to toggle · tap repeatedly to set tempo">
+        <Hint label="Tap to set tempo">
           <Toggle
             size="sm"
             aria-label="Metronome (tap repeatedly to set tempo)"
