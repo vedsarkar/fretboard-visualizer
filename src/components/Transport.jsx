@@ -19,19 +19,7 @@ import { CLICK_RHYTHMS, MetronomeClock, findMeter, permutationLabel } from '@/li
 import { audio } from '@/lib/audio.js';
 import { clampTempo, useTapTempo, useTempoScrub } from '@/hooks/useTempo.js';
 
-/** Cycling control: shows its current value, advances on click. */
-function Cycle({ hint, value, onClick, testId }) {
-  return (
-    <Hint label={hint}>
-      <Button variant="ghost" size="sm" onClick={onClick} data-testid={testId}>
-        {value}
-      </Button>
-    </Hint>
-  );
-}
-
-export function Transport({ state, dispatch, isPlaying, onToggle, permutation, permutationCount }) {
-  const cycle = (field, values) => () => dispatch({ type: 'cycle', field, values });
+export function Transport({ state, dispatch, isPlaying, onToggle }) {
   const setTempo = (tempo) => dispatch({ type: 'patch', patch: { tempo } });
 
   // A standalone click track, independent of the note sequencer, so the
@@ -204,77 +192,6 @@ export function Transport({ state, dispatch, isPlaying, onToggle, permutation, p
             <Repeat />
           </Toggle>
         </Hint>
-      </Cluster>
-
-      <Cluster role="group" aria-label="Pattern">
-        <Cap>Pattern</Cap>
-        <Cycle
-          hint="Notes played per beat"
-          value={`${state.notesPerBeat}/beat`}
-          testId="npb-cycle"
-          onClick={cycle('notesPerBeat', [1, 2, 3, 4])}
-        />
-        <Cycle
-          hint="How many octaves the run spans"
-          value={`${state.octaves} oct`}
-          testId="oct-cycle"
-          onClick={cycle('octaves', [1, 2, 3, 4])}
-        />
-        <Cycle
-          hint="Which way the sequence travels"
-          value={DIRECTIONS.find(([id]) => id === state.direction)[1]}
-          testId="dir-cycle"
-          onClick={cycle('direction', DIRECTIONS.map(([id]) => id))}
-        />
-        <Cycle
-          hint="Notes per repeating group. Group 4 gives the classic 1234-2345 drill"
-          value={`Group ${state.groupLength}`}
-          testId="group-cycle"
-          onClick={cycle('groupLength', [1, 2, 3, 4, 5, 6])}
-        />
-        <Cycle
-          hint="Scale steps between notes inside a group. Step 2 plays in thirds"
-          value={`Step ${state.jump}`}
-          testId="step-cycle"
-          onClick={cycle('jump', [1, 2, 3, 4])}
-        />
-        <Separator orientation="vertical" className="mx-0.5 !h-5" />
-        <Hint label="Reorder the notes within each group">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Previous permutation"
-            data-testid="perm-prev"
-            onClick={() =>
-              dispatch({
-                type: 'patch',
-                patch: { permIndex: (state.permIndex - 1 + permutationCount) % permutationCount },
-              })
-            }
-          >
-            <ChevronLeft />
-          </Button>
-        </Hint>
-        <span
-          className="min-w-10 text-center text-xs font-semibold tabular-nums text-primary"
-          data-testid="perm-value"
-        >
-          {permutationLabel(permutation)}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Next permutation"
-          data-testid="perm-next"
-          onClick={() =>
-            dispatch({
-              type: 'patch',
-              patch: { permIndex: (state.permIndex + 1) % permutationCount },
-            })
-          }
-        >
-          <ChevronRight />
-        </Button>
       </Cluster>
     </div>
   );

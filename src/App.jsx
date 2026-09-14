@@ -103,10 +103,7 @@ export default function App() {
     [state, highlight],
   );
 
-  const { notes, permutation, permutationCount, isPlaying, toggle } = useSequencer(
-    state,
-    onPlayedNote,
-  );
+  const { notes, isPlaying, toggle } = useSequencer(state, onPlayedNote);
 
   const onSelect = useCallback(
     (note) => {
@@ -161,8 +158,6 @@ export default function App() {
               dispatch={dispatch}
               isPlaying={isPlaying}
               onToggle={toggle}
-              permutation={permutation}
-              permutationCount={permutationCount}
             />
 
             <div className="flex flex-wrap items-center gap-2">
