@@ -172,13 +172,6 @@ export default function App() {
 
               <div className="ml-auto flex items-center gap-2">
                 <TempoCluster state={state} dispatch={dispatch} isPlaying={isPlaying} />
-
-                <Hint label="Download the diagram as a PNG">
-                  <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
-                    <Download />
-                    Download
-                  </Button>
-                </Hint>
               </div>
             </div>
           </div>
@@ -221,6 +214,15 @@ export default function App() {
               {'  '}
               {intervals.map((semi) => names[(state.rootPc + semi) % 12]).join(' \u00b7 ')}
             </p>
+
+            <div className="ml-auto flex items-center gap-2">
+              <Hint label="Download the diagram as a PNG">
+                <Button variant="outline" size="sm" data-testid="export-btn" onClick={onExport}>
+                  <Download />
+                  Download
+                </Button>
+              </Hint>
+            </div>
           </div>
         </section>
       </div>
