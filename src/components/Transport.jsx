@@ -170,17 +170,6 @@ export function Transport({ state, dispatch, isPlaying, onToggle }) {
             {isPlaying ? 'Stop' : 'Play'}
           </Button>
         </Hint>
-        <Hint label="Four beats of clicks before the notes start">
-          <Toggle
-            size="sm"
-            aria-label="Count-in"
-            data-testid="countin-toggle"
-            pressed={state.countIn}
-            onPressedChange={() => dispatch({ type: 'toggle', field: 'countIn' })}
-          >
-            Count&#8209;in
-          </Toggle>
-        </Hint>
         <Hint label="Repeat the sequence until stopped">
           <Toggle
             size="sm"
