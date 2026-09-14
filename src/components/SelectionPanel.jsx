@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Cap, Cluster, Hint, MUTABLE, PICKED, PICKED_SOLID } from './Ui.jsx';
+import { Cap, Hint, PICKED, PICKED_SOLID } from './Ui.jsx';
 import {
   CHORD_GROUPS,
   DEGREE_LABEL,
@@ -136,11 +136,7 @@ function Chords({ state, dispatch }) {
   );
 }
 
-export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
-  const enabledStrings = Array.from({ length: stringCount }, (_, i) => i).filter(
-    (i) => !state.stringsOff.includes(i),
-  );
-
+export function SelectionPanel({ state, dispatch, intervals }) {
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3">
       {state.mode === 'scales' ? (
@@ -175,40 +171,6 @@ export function SelectionPanel({ state, dispatch, intervals, stringCount }) {
       ) : (
         <Chords state={state} dispatch={dispatch} />
       )}
-
-      <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-border pt-3">
-        <Cluster role="group" aria-label="Degrees">
-          <Cap>Degrees</Cap>
-          <ToggleGroup
-            type="multiple"
-            size="sm"
-            value={state.degreeFilter.map(String)}
-            onValueChange={(values) =>
-              dispatch({ type: 'setDegrees', indices: values.map(Number) })
-            }
-            data-testid="degree-group"
-          >
-            {intervals.map((semitones, index) => (
-              <ToggleGroupItem
-                key={index}
-                value={String(index)}
-                aria-label={`Degree ${index + 1} (${DEGREE_LABEL[semitones]})`}
-                className={PICKED}
-              >
-                {index + 1}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <Button
-            size="sm"
-            variant={state.degreeFilter.length === 0 ? 'default' : 'ghost'}
-            data-testid="degree-all"
-            onClick={() => dispatch({ type: 'clearDegrees' })}
-          >
-            All
-          </Button>
-        </Cluster>
-      </div>
     </section>
   );
 }

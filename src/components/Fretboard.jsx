@@ -73,13 +73,11 @@ export const Fretboard = forwardRef(function Fretboard(
 
   const notes = useMemo(() => {
     const out = [];
-    const showAllDegrees = view.degreeFilter.length === 0;
     for (let i = 0; i < stringCount; i += 1) {
       for (let fret = 0; fret <= fretCount; fret += 1) {
         const midi = strings[i] + fret;
         const entry = view.pitches.get(pitchClass(midi));
         if (!entry) continue;
-        if (!showAllDegrees && !view.degreeFilter.includes(entry.degree)) continue;
         const key = `${i}:${fret}`;
         out.push({
           key,
@@ -97,7 +95,7 @@ export const Fretboard = forwardRef(function Fretboard(
       }
     }
     return out;
-  }, [L, strings, stringCount, fretCount, flats, showDegrees, stringEnabled, view.pitches, view.degreeFilter, view.painted, view.spotlight]);
+  }, [L, strings, stringCount, fretCount, flats, showDegrees, stringEnabled, view.pitches, view.painted, view.spotlight]);
 
   const boardX = L.mirror(L.boardLeft) - (leftHanded ? L.boardWidth : 0);
 

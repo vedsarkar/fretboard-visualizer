@@ -72,7 +72,6 @@ export default function App() {
       showDegrees: state.showDegrees,
       stringEnabled: enabled,
       pitches,
-      degreeFilter: state.degreeFilter,
       painted: state.painted,
       spotlight: state.spotlight,
     }),
@@ -84,7 +83,6 @@ export default function App() {
       state.showDegrees,
       enabled,
       pitches,
-      state.degreeFilter,
       state.painted,
       state.spotlight,
     ],
@@ -179,12 +177,7 @@ export default function App() {
           </div>
         </header>
 
-        <SelectionPanel
-          state={state}
-          dispatch={dispatch}
-          intervals={intervals}
-          stringCount={totalStrings}
-        />
+        <SelectionPanel state={state} dispatch={dispatch} intervals={intervals} />
 
         <section className="flex flex-col gap-2">
           <BoardControls

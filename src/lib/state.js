@@ -61,7 +61,6 @@ export const initialState = {
   leftHanded: false,
   flats: false,
   showDegrees: false,
-  degreeFilter: [],
   stringsOff: [],
   painted: {},
   paintColor: null,
@@ -91,13 +90,13 @@ export function reducer(state, action) {
       return { ...state, ...action.patch };
 
     case 'setMode':
-      return { ...state, mode: action.mode, useCustom: false, degreeFilter: [] };
+      return { ...state, mode: action.mode, useCustom: false };
 
     case 'selectScale':
-      return { ...state, mode: 'scales', scaleId: action.id, useCustom: false, degreeFilter: [] };
+      return { ...state, mode: 'scales', scaleId: action.id, useCustom: false };
 
     case 'selectChord':
-      return { ...state, mode: 'chords', chordId: action.id, useCustom: false, degreeFilter: [] };
+      return { ...state, mode: 'chords', chordId: action.id, useCustom: false };
 
     case 'enableCustom':
       return { ...state, useCustom: true, customIntervals: selectionIntervals(state) };
@@ -109,7 +108,6 @@ export function reducer(state, action) {
         ...state,
         useCustom: true,
         customIntervals: next.length ? next : [0],
-        degreeFilter: [],
       };
     }
 
@@ -133,16 +131,6 @@ export function reducer(state, action) {
       if (extra === state.extraStrings) return state;
       return { ...state, extraStrings: extra, stringsOff: [], painted: {} };
     }
-
-    case 'setDegrees': {
-      const next = [...action.indices].sort((a, b) => a - b);
-      // Every degree selected means no filter at all.
-      const total = selectionIntervals(state).length;
-      return { ...state, degreeFilter: next.length === total ? [] : next };
-    }
-
-    case 'clearDegrees':
-      return { ...state, degreeFilter: [] };
 
     case 'setStrings': {
       const on = new Set(action.on);

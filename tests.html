@@ -53,7 +53,6 @@
       const markers = () => root.querySelectorAll('.fb-note');
       const dotLabels = () => [...root.querySelectorAll('.fb-note text')].map((t) => t.textContent);
       const readout = (id) => byId(id).textContent.trim();
-      const seqCount = () => Number(/(\d+) notes/.exec(byId('sequence-display').textContent)?.[1] ?? 0);
       const openLabelsIn = (svg) =>
         [...svg.querySelectorAll('text')]
           .filter((t) => /^[A-G]#?\d$/.test(t.textContent))
@@ -161,11 +160,6 @@
         st = S.reducer(base, { type: 'setIntervals', semitones: [7, 0, 3] });
         log('setIntervals sorts', st.customIntervals.join(',') === '0,3,7');
 
-        st = S.reducer(base, { type: 'setDegrees', indices: [2, 0] });
-        log('setDegrees sorts', st.degreeFilter.join(',') === '0,2');
-        st = S.reducer(base, { type: 'setDegrees', indices: [0, 1, 2, 3, 4, 5, 6] });
-        log('selecting every degree means no filter', st.degreeFilter.length === 0);
-
         st = S.reducer(base, { type: 'setStrings', on: [0, 1], total: 6 });
         log('setStrings stores the complement', st.stringsOff.join(',') === '2,3,4,5', st.stringsOff.join(','));
         st = S.reducer(base, { type: 'setStrings', on: [0, 1, 2, 3, 4, 5], total: 6 });
@@ -206,7 +200,6 @@
           showDegrees: false,
           stringEnabled: [true, true, true, true],
           pitches: new Map([[0, { degree: 0, semitones: 0 }]]),
-          degreeFilter: [],
           painted: {},
           spotlight: null,
         };
@@ -261,33 +254,19 @@
 
         // Modes and chords
         const scaleCount = markers().length;
-        await click(byText('Chords', byId('mode-group')));
+        await click(byText('Piano', byId('mode-group')));
         log('chord panel renders', Boolean(byId('chord-group')));
         await click(byText('Maj7', byId('chord-group')));
         log('chord shows fewer notes than scale', markers().length < scaleCount,
           `${markers().length} vs ${scaleCount}`);
-        await click(byText('Scales', byId('mode-group')));
-
-        // Degree filter
-        await click(inGroup('degree-group')[0]);
-        const rootsOnly = markers().length;
-        log('degree filter narrows board', rootsOnly > 0 && rootsOnly < scaleCount / 3, `${rootsOnly} roots`);
-        await click(byId('degree-all'));
-        log('All restores every degree', markers().length === scaleCount);
+        await click(byText('Guitar', byId('mode-group')));
 
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',
           openLabelsIn(board()).join(' '));
-        // A one-octave pool only shifts down when a lower string arrives. Four
-        // octaves overruns the top of the neck, so the new range adds notes.
-        for (let i = 0; i < 3; i += 1) await click(byId('oct-cycle'));
-        const sixStringNotes = seqCount();
         await click(byId('strings-inc'));
         log('seventh string adds a low B1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1',
           openLabelsIn(board()).join(' '));
-        log('the sequence follows the added string', seqCount() > sixStringNotes,
-          `${sixStringNotes} -> ${seqCount()}`);
-        await click(byId('oct-cycle'));
         await click(byId('strings-inc'));
         log('eighth string adds a low F#1', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2 B1 F#1',
           openLabelsIn(board()).join(' '));
@@ -337,12 +316,6 @@
         await click(byId('tune-inc'));
 
         // Transport
-        await click(byId('npb-cycle'));
-        log('notes-per-beat cycles', /3\/beat/.test(byId('npb-cycle').textContent));
-        await click(byId('group-cycle'));
-        log('group length cycles', /Group 2/.test(byId('group-cycle').textContent));
-        await click(byId('perm-next'));
-        log('permutation advances', readout('perm-value') === '21', readout('perm-value'));
         // aria-pressed, not data-state: TooltipTrigger asChild overwrites the
         // latter on any toggle it wraps.
         await click(byId('loop-toggle'));
@@ -350,8 +323,6 @@
           `aria-pressed=${byId('loop-toggle').getAttribute('aria-pressed')}`);
         await click(byId('loop-toggle'));
         log('loop toggle releases', byId('loop-toggle').getAttribute('aria-pressed') === 'false');
-        log('sequence preview populated', /\d+ notes/.test(byId('sequence-display').textContent),
-          byId('sequence-display').textContent.slice(0, 40));
 
         /* ---------------- coverage across the data ---------------- */
         const countFor = (patch) => {

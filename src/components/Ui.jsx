@@ -27,9 +27,6 @@ export const PICKED =
   'aria-pressed:bg-primary/20 aria-pressed:text-primary data-[state=on]:bg-primary/20 data-[state=on]:text-primary';
 export const PICKED_SOLID =
   'aria-pressed:bg-primary aria-pressed:text-primary-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground';
-/** Muted strings read as struck through rather than merely tinted. */
-export const MUTABLE = 'data-[state=off]:opacity-40 data-[state=off]:line-through';
-
 /** Row label shared by the control groups. */
 export const Cap = ({ children }) => (
   <span className="px-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
