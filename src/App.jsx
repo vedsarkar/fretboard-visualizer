@@ -22,7 +22,7 @@ import {
 } from '@/lib/state.js';
 import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
-import { Transport } from './components/Transport.jsx';
+import { Transport, Playback } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
 import { Hint, PICKED_SOLID } from './components/Ui.jsx';
@@ -233,13 +233,16 @@ export default function App() {
             />
           </div>
 
-          <p className="text-xs text-muted-foreground" data-testid="summary">
-            <span className="font-semibold text-foreground">
-              {names[state.rootPc]} {name}
-            </span>
-            {'  '}
-            {intervals.map((semi) => names[(state.rootPc + semi) % 12]).join(' \u00b7 ')}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Playback isPlaying={isPlaying} onToggle={toggle} state={state} dispatch={dispatch} />
+            <p className="text-xs text-muted-foreground" data-testid="summary">
+              <span className="font-semibold text-foreground">
+                {names[state.rootPc]} {name}
+              </span>
+              {'  '}
+              {intervals.map((semi) => names[(state.rootPc + semi) % 12]).join(' \u00b7 ')}
+            </p>
+          </div>
         </section>
       </div>
     </TooltipProvider>

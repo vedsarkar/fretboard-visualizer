@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Metronome,
   Play,
@@ -12,10 +10,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
-import { Cap, Cluster, Hint } from './Ui.jsx';
+import { Cluster, Hint } from './Ui.jsx';
 import { MetronomePanel } from './MetronomePanel.jsx';
-import { DIRECTIONS } from '@/lib/state.js';
-import { CLICK_RHYTHMS, MetronomeClock, findMeter, permutationLabel } from '@/lib/sequencer.js';
+import { CLICK_RHYTHMS, MetronomeClock, findMeter } from '@/lib/sequencer.js';
 import { audio } from '@/lib/audio.js';
 import { clampTempo, useTapTempo, useTempoScrub } from '@/hooks/useTempo.js';
 
@@ -157,31 +154,36 @@ export function Transport({ state, dispatch, isPlaying, onToggle }) {
           onTap={handlePanelTap}
         />
       </Cluster>
-
-      <Cluster role="group" aria-label="Playback">
-        <Hint label={isPlaying ? 'Stop (Space)' : 'Play (Space)'}>
-          <Button
-            size="sm"
-            variant={isPlaying ? 'default' : 'outline'}
-            onClick={onToggle}
-            data-testid="play-btn"
-          >
-            {isPlaying ? <Square /> : <Play />}
-            {isPlaying ? 'Stop' : 'Play'}
-          </Button>
-        </Hint>
-        <Hint label="Repeat the sequence until stopped">
-          <Toggle
-            size="sm"
-            aria-label="Loop"
-            data-testid="loop-toggle"
-            pressed={state.loop}
-            onPressedChange={() => dispatch({ type: 'toggle', field: 'loop' })}
-          >
-            <Repeat />
-          </Toggle>
-        </Hint>
-      </Cluster>
     </div>
+  );
+}
+
+/** Playback controls for placing elsewhere (e.g., footer). */
+export function Playback({ isPlaying, onToggle, state, dispatch }) {
+  return (
+    <Cluster role="group" aria-label="Playback">
+      <Hint label={isPlaying ? 'Stop (Space)' : 'Play (Space)'}>
+        <Button
+          size="sm"
+          variant={isPlaying ? 'default' : 'outline'}
+          onClick={onToggle}
+          data-testid="play-btn"
+        >
+          {isPlaying ? <Square /> : <Play />}
+          {isPlaying ? 'Stop' : 'Play'}
+        </Button>
+      </Hint>
+      <Hint label="Repeat the sequence until stopped">
+        <Toggle
+          size="sm"
+          aria-label="Loop"
+          data-testid="loop-toggle"
+          pressed={state.loop}
+          onPressedChange={() => dispatch({ type: 'toggle', field: 'loop' })}
+        >
+          <Repeat />
+        </Toggle>
+      </Hint>
+    </Cluster>
   );
 }
