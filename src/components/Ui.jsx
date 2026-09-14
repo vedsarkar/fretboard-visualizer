@@ -26,7 +26,7 @@ export function Hint({ label, children }) {
 export const PICKED =
   'aria-pressed:bg-primary/20 aria-pressed:text-primary data-[state=on]:bg-primary/20 data-[state=on]:text-primary';
 export const PICKED_SOLID =
-  'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground';
+  'aria-pressed:bg-primary aria-pressed:text-primary-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground';
 /** Muted strings read as struck through rather than merely tinted. */
 export const MUTABLE = 'data-[state=off]:opacity-40 data-[state=off]:line-through';
 

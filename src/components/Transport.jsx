@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
-import { Cluster, Hint } from './Ui.jsx';
+import { Cluster, Hint, PICKED_SOLID } from './Ui.jsx';
 import { MetronomePanel } from './MetronomePanel.jsx';
 import { CLICK_RHYTHMS, MetronomeClock, findMeter } from '@/lib/sequencer.js';
 import { audio } from '@/lib/audio.js';
@@ -187,6 +187,7 @@ export function Playback({ isPlaying, onToggle, state, dispatch }) {
           data-testid="loop-toggle"
           pressed={state.loop}
           onPressedChange={() => dispatch({ type: 'toggle', field: 'loop' })}
+          className={PICKED_SOLID}
         >
           <Repeat />
         </Toggle>
