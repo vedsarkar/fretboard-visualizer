@@ -163,18 +163,27 @@ export default function App() {
             extraAllowed={extraAllowed}
           />
 
-          <div
-            className="overflow-x-auto rounded-xl border border-border bg-card p-2"
-            data-testid="fretboard"
-          >
-            <Fretboard
-              ref={svgRef}
-              view={view}
-              flash={flash}
-              onSelect={onSelect}
-              onSpotlight={onSpotlight}
-            />
-          </div>
+          {state.board === 'guitar' ? (
+            <div
+              className="overflow-x-auto rounded-xl border border-border bg-card p-2"
+              data-testid="fretboard"
+            >
+              <Fretboard
+                ref={svgRef}
+                view={view}
+                flash={flash}
+                onSelect={onSelect}
+                onSpotlight={onSpotlight}
+              />
+            </div>
+          ) : (
+            <div
+              className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground"
+              data-testid="keyboard"
+            >
+              Keyboard diagram lands in the next step
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3">
             <Playback isPlaying={isPlaying} onToggle={toggle} state={state} dispatch={dispatch} />

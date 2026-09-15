@@ -48,6 +48,7 @@ export const PERSIST_FIELDS = [
 ];
 
 export const initialState = {
+  board: 'guitar',
   mode: 'scales',
   scaleId: 'ionian',
   chordId: 'major',
@@ -58,6 +59,7 @@ export const initialState = {
   extraStrings: 0,
   transpose: 0,
   fretCount: 24,
+  keyCount: 61,
   leftHanded: false,
   flats: false,
   showDegrees: false,
@@ -91,6 +93,12 @@ export function reducer(state, action) {
 
     case 'setMode':
       return { ...state, mode: action.mode, useCustom: false };
+
+    case 'setBoard':
+      return { ...state, board: action.board };
+
+    case 'setKeyCount':
+      return { ...state, keyCount: action.count };
 
     case 'selectScale':
       return { ...state, mode: 'scales', scaleId: action.id, useCustom: false };

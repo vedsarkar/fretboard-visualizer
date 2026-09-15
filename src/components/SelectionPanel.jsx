@@ -15,12 +15,10 @@ import {
 import { Cap, Hint, PICKED, PICKED_SOLID } from './Ui.jsx';
 import { TempoCluster } from './Transport.jsx';
 import {
-  CHORD_GROUPS,
   DEGREE_LABEL,
   INTERVAL_LABEL,
   INTERVAL_NAME,
   SCALE_GROUPS,
-  findChord,
   findScale,
 } from '@/lib/theory.js';
 
@@ -82,61 +80,6 @@ function ScaleGroups({ state, dispatch }) {
   );
 }
 
-function Chords({ state, dispatch }) {
-  const [common, extended] = CHORD_GROUPS;
-  const extendedActive = !state.useCustom && extended.chords.some((c) => c.id === state.chordId);
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={state.useCustom ? '' : state.chordId}
-        onValueChange={(id) => id && dispatch({ type: 'selectChord', id })}
-        data-testid="chord-group"
-      >
-        {common.chords.map((chord) => (
-          <ToggleGroupItem
-            key={chord.id}
-            value={chord.id}
-            aria-label={chord.name}
-            className={PICKED_SOLID}
-          >
-            {chord.name}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant={extendedActive ? 'default' : 'outline'} data-testid="chord-more">
-            {extendedActive ? findChord(state.chordId).name : extended.label}
-            <ChevronDown />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="flex w-auto min-w-72 overflow-hidden">
-          <ScrollArea className="flex-1">
-            <DropdownMenuRadioGroup
-              value={state.useCustom ? '' : state.chordId}
-              onValueChange={(id) => dispatch({ type: 'selectChord', id })}
-            >
-              {extended.chords.map((chord) => (
-                <DropdownMenuRadioItem key={chord.id} value={chord.id}>
-                  <span className="flex-1">{chord.name}</span>
-                  <span className="ml-3 text-xs tabular-nums text-muted-foreground">
-                    {summary(chord.intervals)}
-                  </span>
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </ScrollArea>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
-
 export function SelectionPanel({ state, dispatch, intervals, isPlaying }) {
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3">
@@ -145,26 +88,18 @@ export function SelectionPanel({ state, dispatch, intervals, isPlaying }) {
           type="single"
           variant="outline"
           size="sm"
-          value={state.mode}
-          onValueChange={(mode) => mode && mode !== 'chords' && dispatch({ type: 'setMode', mode })}
+          value={state.board}
+          onValueChange={(board) => board && dispatch({ type: 'setBoard', board })}
           data-testid="mode-group"
         >
-          <ToggleGroupItem value="scales" aria-label="Guitar" className={PICKED_SOLID}>
+          <ToggleGroupItem value="guitar" aria-label="Guitar" className={PICKED_SOLID}>
             <Guitar className="size-4" />
             Guitar
           </ToggleGroupItem>
-          <Hint label="Coming soon">
-            <ToggleGroupItem
-              value="chords"
-              aria-label="Piano"
-              aria-disabled="true"
-              data-testid="mode-piano"
-              className="cursor-not-allowed opacity-50 hover:bg-transparent hover:text-inherit"
-            >
-              <Piano className="size-4" />
-              Piano
-            </ToggleGroupItem>
-          </Hint>
+          <ToggleGroupItem value="piano" aria-label="Piano" className={PICKED_SOLID}>
+            <Piano className="size-4" />
+            Piano
+          </ToggleGroupItem>
         </ToggleGroup>
 
         <div className="ml-auto flex items-center gap-2">
@@ -172,38 +107,34 @@ export function SelectionPanel({ state, dispatch, intervals, isPlaying }) {
         </div>
       </div>
 
-      {state.mode === 'scales' ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <ScaleGroups state={state} dispatch={dispatch} />
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Cap>Intervals</Cap>
-            <ToggleGroup
-              type="multiple"
-              variant="outline"
-              size="sm"
-              value={intervals.map(String)}
-              onValueChange={(values) =>
-                dispatch({ type: 'setIntervals', semitones: values.map(Number) })
-              }
-              data-testid="interval-group"
-            >
-              {INTERVAL_LABEL.map((label, semitones) => (
-                <Hint key={label} label={INTERVAL_NAME[semitones]}>
-                  <ToggleGroupItem
-                    value={String(semitones)}
-                    aria-label={INTERVAL_NAME[semitones]}
-                    className={PICKED}
-                  >
-                    {label}
-                  </ToggleGroupItem>
-                </Hint>
-              ))}
-            </ToggleGroup>
-          </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <ScaleGroups state={state} dispatch={dispatch} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Cap>Intervals</Cap>
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            size="sm"
+            value={intervals.map(String)}
+            onValueChange={(values) =>
+              dispatch({ type: 'setIntervals', semitones: values.map(Number) })
+            }
+            data-testid="interval-group"
+          >
+            {INTERVAL_LABEL.map((label, semitones) => (
+              <Hint key={label} label={INTERVAL_NAME[semitones]}>
+                <ToggleGroupItem
+                  value={String(semitones)}
+                  aria-label={INTERVAL_NAME[semitones]}
+                  className={PICKED}
+                >
+                  {label}
+                </ToggleGroupItem>
+              </Hint>
+            ))}
+          </ToggleGroup>
         </div>
-      ) : (
-        <Chords state={state} dispatch={dispatch} />
-      )}
+      </div>
     </section>
   );
 }

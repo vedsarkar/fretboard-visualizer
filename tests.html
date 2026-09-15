@@ -81,6 +81,18 @@
         log('every interval name keeps its enharmonic', theory.INTERVAL_NAME.length === 12 &&
           theory.INTERVAL_NAME.slice(1).every((n) => n.includes(' / ')));
 
+        /* ---------------- keyboard sizes ---------------- */
+        log('every keyboard size spans exactly its key count',
+          theory.KEY_COUNTS.every(({ count }) => {
+            const { lowMidi, highMidi } = theory.keyRangeMidi(count);
+            return highMidi - lowMidi + 1 === count;
+          }),
+          theory.KEY_COUNTS.map((k) => `${k.count}:${k.low}-${k.high}`).join(' '));
+        log('88 keys run A0 to C8', theory.keyRangeMidi(88).lowMidi === 21 &&
+          theory.keyRangeMidi(88).highMidi === 108);
+        log('an unknown keyboard size falls back to 61', theory.keyRangeMidi(37).lowMidi ===
+          theory.keyRangeMidi(61).lowMidi);
+
         /* ---------------- extra low strings ---------------- */
         const spell = (midis) => midis.map((m) => theory.noteNameOctave(m, false)).join(' ');
         const guitar = theory.findTuning('standard');
@@ -167,6 +179,12 @@
 
         st = S.reducer(base, { type: 'selectChord', id: 'maj7' });
         log('selectChord switches mode', st.mode === 'chords' && st.chordId === 'maj7');
+
+        log('the board starts on guitar', base.board === 'guitar' && base.keyCount === 61);
+        st = S.reducer(base, { type: 'setBoard', board: 'piano' });
+        log('setBoard switches instrument', st.board === 'piano');
+        st = S.reducer(st, { type: 'setKeyCount', count: 88 });
+        log('setKeyCount keeps the piano selected', st.board === 'piano' && st.keyCount === 88);
         st = S.reducer(base, { type: 'clamp', field: 'tempo', delta: -1000, min: 30, max: 300 });
         log('tempo clamps at 30', st.tempo === 30);
         st = S.reducer({ ...base, notesPerBeat: 4 }, { type: 'cycle', field: 'notesPerBeat', values: [1, 2, 3, 4] });
@@ -252,9 +270,24 @@
           [...degreeSet].join(' '));
         await click(byId('degree-toggle'));
 
-        // Piano mode is disabled ("Coming soon") and shouldn't switch on click
+        // Piano swaps the guitar-only controls for a keyboard size picker
         await click(byText('Piano', byId('mode-group')));
-        log('disabled Piano toggle does not switch modes', !byId('chord-group'));
+        log('piano shows the keyboard', Boolean(byId('keyboard')) && !byId('fretboard'));
+        log('piano offers a keys picker, defaulting to 61 keys',
+          byId('keys-select')?.textContent.replace(/\s+/g, '').startsWith('Keys61'),
+          byId('keys-select')?.textContent.trim());
+        log('piano drops the guitar-only controls',
+          !byId('instrument-select') && !byId('hand-toggle') && !byId('strings-value') &&
+          !byId('tune-value') && !byId('frets-value'));
+        log('piano keeps root, notation and degree controls',
+          Boolean(byId('root-select') && byId('notation-toggle') && byId('degree-toggle')));
+        log('the scale row stays put on piano',
+          Boolean(byId('scale-select') && byId('interval-group')));
+
+        await click(byText('Guitar', byId('mode-group')));
+        log('switching back restores the fretboard',
+          Boolean(byId('fretboard') && byId('instrument-select') && byId('frets-value')) &&
+          !byId('keys-select'));
 
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',

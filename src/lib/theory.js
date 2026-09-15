@@ -298,3 +298,22 @@ export function extendedTuningMidi(t, transpose = 0, extra = 0) {
 /** Frets whose inlay markers are drawn, with 12/24 doubled. */
 export const INLAY_FRETS = [3, 5, 7, 9, 15, 17, 19, 21];
 export const DOUBLE_INLAY_FRETS = [12, 24];
+
+/* ---------------------------------------------------------------- keyboard */
+
+/** Keyboard sizes we offer, each with the span a real instrument of that size covers. */
+export const KEY_COUNTS = [
+  { count: 88, low: 'A0', high: 'C8' },
+  { count: 76, low: 'E1', high: 'G7' },
+  { count: 61, low: 'C2', high: 'C7' },
+  { count: 49, low: 'C2', high: 'C6' },
+  { count: 25, low: 'C3', high: 'C5' },
+];
+
+export const findKeyRange = (count) => KEY_COUNTS.find((k) => k.count === count);
+
+/** Lowest and highest MIDI note on a keyboard of this size. */
+export function keyRangeMidi(count) {
+  const range = findKeyRange(count) ?? findKeyRange(61);
+  return { lowMidi: nameToMidi(range.low), highMidi: nameToMidi(range.high) };
+}
