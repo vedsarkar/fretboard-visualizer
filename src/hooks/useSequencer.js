@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audio } from '../lib/audio.js';
 import { Sequencer, buildSequence, notePool, permutations } from '../lib/sequencer.js';
+import { keyRangeMidi } from '../lib/theory.js';
 import { openStrings, playbackIntervals } from '../lib/state.js';
 
 /**
@@ -21,12 +22,21 @@ export function useSequencer(state, onNote) {
   const permutation = permutationList[Math.min(state.permIndex, permutationList.length - 1)];
 
   const notes = useMemo(() => {
-    const strings = openStrings(state);
+    /* The keyboard's range is its key count; the fretboard's is its tuning. */
+    const range = () => {
+      if (state.board === 'piano') return keyRangeMidi(state.keyCount);
+      const strings = openStrings(state);
+      return {
+        lowMidi: Math.min(...strings),
+        highMidi: Math.max(...strings) + state.fretCount,
+      };
+    };
+    const { lowMidi, highMidi } = range();
     const pool = notePool({
       rootPc: state.rootPc,
       intervals: playbackIntervals(state),
-      lowMidi: Math.min(...strings),
-      highMidi: Math.max(...strings) + state.fretCount,
+      lowMidi,
+      highMidi,
       octaves: state.octaves,
     });
     return buildSequence(pool, {
@@ -47,6 +57,8 @@ export function useSequencer(state, onNote) {
     state.transpose,
     state.extraStrings,
     state.fretCount,
+    state.board,
+    state.keyCount,
     state.octaves,
     state.groupLength,
     state.jump,

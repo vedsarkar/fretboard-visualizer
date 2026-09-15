@@ -14,8 +14,10 @@
       import App from '/src/App.jsx';
       import { Fretboard } from '/src/components/Fretboard.jsx';
       import * as theory from '/src/lib/theory.js';
+      import * as kb from '/src/lib/keyboard.js';
       import * as seq from '/src/lib/sequencer.js';
       import * as S from '/src/lib/state.js';
+      import * as layout from '/src/lib/layout.js';
       import { svgToPng } from '/src/lib/layout.js';
       import '/src/index.css';
       import '/src/app.css';
@@ -92,6 +94,60 @@
           theory.keyRangeMidi(88).highMidi === 108);
         log('an unknown keyboard size falls back to 61', theory.keyRangeMidi(37).lowMidi ===
           theory.keyRangeMidi(61).lowMidi);
+
+        /* ---------------- keyboard geometry ---------------- */
+        const layoutFor = (count) => kb.computeKeyboardLayout({ keyCount: count });
+        log('each keyboard size lays out exactly its key count',
+          theory.KEY_COUNTS.every(({ count }) => layoutFor(count).keys.length === count));
+        log('white keys per size are 52 45 36 29 15',
+          theory.KEY_COUNTS.map((k) => layoutFor(k.count).whites.length).join(' ') ===
+          '52 45 36 29 15',
+          theory.KEY_COUNTS.map((k) => layoutFor(k.count).whites.length).join(' '));
+        log('whites and blacks account for every key',
+          theory.KEY_COUNTS.every(({ count }) => {
+            const L = layoutFor(count);
+            return L.whites.length + L.blacks.length === count;
+          }));
+        log('an unknown size falls back to the 61-key layout',
+          layoutFor(37).keys.length === 61);
+        log('keys are laid out strictly left to right',
+          theory.KEY_COUNTS.every(({ count }) =>
+            layoutFor(count).keys.every((k, i, all) => i === 0 || k.x > all[i - 1].x)));
+        log('every black key overlaps the two whites it sits between',
+          (() => {
+            const L = layoutFor(88);
+            return L.keys.every((k, i, all) => {
+              if (!k.black) return true;
+              const left = all[i - 1];
+              const right = all[i + 1];
+              return k.x > left.x && k.x + k.w < right.x + right.w;
+            });
+          })());
+        log('black keys are offset, not centred on the seam',
+          (() => {
+            const L = layoutFor(61);
+            /* A naive layout centres every black key on the seam, making all
+               these deltas identical. Real key cutting varies them. */
+            const deltas = new Set(
+              L.blacks.map((k) => Math.round((k.cx % L.whiteWidth) * 100) / 100),
+            );
+            return deltas.size > 1;
+          })());
+        log('note dots never straddle a black key edge',
+          (() => {
+            const L = layoutFor(88);
+            return L.blacks.every((k) => k.cy + L.noteRadius <= k.y + k.h);
+          })());
+        log('white-key dots sit clear of the black keys above them',
+          (() => {
+            const L = layoutFor(88);
+            const blackBottom = L.blacks[0].y + L.blacks[0].h;
+            return L.whites.every((k) => k.cy - L.noteRadius > blackBottom);
+          })());
+        log('the keyboard palette reuses the fretboard palette',
+          kb.KEY_COLORS.white === layout.COLORS.board &&
+          kb.KEY_COLORS.black === layout.COLORS.fret &&
+          kb.KEY_COLORS.rootRing === layout.COLORS.rootRing);
 
         /* ---------------- extra low strings ---------------- */
         const spell = (midis) => midis.map((m) => theory.noteNameOctave(m, false)).join(' ');
@@ -284,10 +340,39 @@
         log('the scale row stays put on piano',
           Boolean(byId('scale-select') && byId('interval-group')));
 
+        // The rendered keyboard, still on C major / 61 keys
+        const keys = byId('keyboard').querySelector('svg');
+        log('the keyboard renders as a labelled diagram',
+          keys?.getAttribute('aria-label') === 'Keyboard diagram');
+        const whiteRects = [...keys.querySelectorAll('rect')]
+          .filter((r) => r.getAttribute('fill') === kb.KEY_COLORS.white);
+        const blackRects = [...keys.querySelectorAll('rect')]
+          .filter((r) => r.getAttribute('fill') === kb.KEY_COLORS.black);
+        log('61 keys draw 36 white and 25 black rects',
+          whiteRects.length === 36 && blackRects.length === 25,
+          `${whiteRects.length} white / ${blackRects.length} black`);
+        const keyDots = [...keys.querySelectorAll('.fb-note')];
+        log('C major marks all 36 white keys and no black ones',
+          keyDots.length === 36, String(keyDots.length));
+        log('every C major dot is labelled with a natural',
+          keyDots.every((g) => /^[A-G]$/.test(g.querySelector('text').textContent)),
+          [...new Set(keyDots.map((g) => g.querySelector('text').textContent))].sort().join(' '));
+        log('in-scale keys are clickable',
+          whiteRects.every((r) => r.style.cursor === 'pointer'));
+        log('out-of-scale keys are inert',
+          blackRects.every((r) => r.style.cursor !== 'pointer'));
+        log('every octave C is labelled C2 through C7',
+          [...keys.querySelectorAll('text')]
+            .map((t) => t.textContent)
+            .filter((t) => /^C\d$/.test(t))
+            .join(' ') === 'C2 C3 C4 C5 C6 C7',
+          [...keys.querySelectorAll('text')].map((t) => t.textContent)
+            .filter((t) => /^C\d$/.test(t)).join(' '));
+
         await click(byText('Guitar', byId('mode-group')));
         log('switching back restores the fretboard',
           Boolean(byId('fretboard') && byId('instrument-select') && byId('frets-value')) &&
-          !byId('keys-select'));
+          !byId('keys-select') && !byId('keyboard'));
 
         // Extra low strings
         log('board starts as a six string', openLabelsIn(board()).join(' ') === 'E4 B3 G3 D3 A2 E2',

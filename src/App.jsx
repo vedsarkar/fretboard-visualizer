@@ -21,6 +21,7 @@ import {
 } from '@/lib/state.js';
 import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
+import { Keyboard } from './components/Keyboard.jsx';
 import { Playback } from './components/Transport.jsx';
 import { SelectionPanel } from './components/SelectionPanel.jsx';
 import { BoardControls } from './components/BoardControls.jsx';
@@ -87,6 +88,18 @@ export default function App() {
     ],
   );
 
+  const keyView = useMemo(
+    () => ({
+      keyCount: state.keyCount,
+      flats: state.flats,
+      showDegrees: state.showDegrees,
+      pitches,
+      painted: state.painted,
+      spotlight: state.spotlight,
+    }),
+    [state.keyCount, state.flats, state.showDegrees, pitches, state.painted, state.spotlight],
+  );
+
   const highlight = useCallback((key) => {
     flashId.current += 1;
     setFlash({ key, id: flashId.current });
@@ -94,6 +107,11 @@ export default function App() {
 
   const onPlayedNote = useCallback(
     ({ midi }) => {
+      /* The keyboard has one key per pitch; the fretboard has to pick a position. */
+      if (state.board === 'piano') {
+        highlight(`k:${midi}`);
+        return;
+      }
       const [best] = positionsFor(state, midi);
       if (best) highlight(`${best.string}:${best.fret}`);
     },
@@ -178,10 +196,16 @@ export default function App() {
             </div>
           ) : (
             <div
-              className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground"
+              className="overflow-x-auto rounded-xl border border-border bg-card p-2"
               data-testid="keyboard"
             >
-              Keyboard diagram lands in the next step
+              <Keyboard
+                ref={svgRef}
+                view={keyView}
+                flash={flash}
+                onSelect={onSelect}
+                onSpotlight={onSpotlight}
+              />
             </div>
           )}
 
