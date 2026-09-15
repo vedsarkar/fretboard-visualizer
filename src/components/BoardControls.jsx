@@ -162,7 +162,7 @@ export function BoardControls({ state, dispatch, stringCount, extraAllowed }) {
           value={String(state.keyCount)}
           onValueChange={(count) => dispatch({ type: 'setKeyCount', count: Number(count) })}
         >
-          <SelectTrigger size="sm" className="w-[132px]" aria-label="Keys" data-testid="keys-select">
+          <SelectTrigger size="sm" className="w-20" aria-label="Keys" data-testid="keys-select">
             <span className="flex items-center gap-1.5">
               <FieldLabel>Keys</FieldLabel>
               <SelectValue />
