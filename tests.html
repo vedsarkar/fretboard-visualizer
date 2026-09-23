@@ -74,9 +74,6 @@
         log('40 scales, rooted and sorted', theory.ALL_SCALES.length === 40 &&
           theory.ALL_SCALES.every((s) => s.intervals[0] === 0 &&
             s.intervals.every((v, i, a) => v >= 0 && v < 12 && (i === 0 || v > a[i - 1]))));
-        log('20 chords, rooted and sorted', theory.ALL_CHORDS.length === 20 &&
-          theory.ALL_CHORDS.every((c) => c.intervals[0] === 0 &&
-            c.intervals.every((v, i, a) => v >= 0 && v < 12 && (i === 0 || v > a[i - 1]))));
         log('interval labels are the plain spellings',
           theory.INTERVAL_LABEL.join(' ') === 'P1 m2 M2 m3 M3 P4 d5 P5 m6 M6 m7 M7',
           theory.INTERVAL_LABEL.join(' '));
@@ -170,15 +167,15 @@
           theory.extendedTuningMidi(theory.findTuning('ukulele'), 0, 1)[0] === 55,
           spell(theory.extendedTuningMidi(theory.findTuning('ukulele'), 0, 1)));
 
-        /* ---------------- patterns ---------------- */
-        const pool = seq.notePool({ rootPc: 0, intervals: [0, 2, 4, 5, 7, 9, 11], lowMidi: 40, highMidi: 64, octaves: 1 });
+        /* ---------------- note pool ---------------- */
+        const pool = seq.notePool({ rootPc: 0, intervals: [0, 2, 4, 5, 7, 9, 11], lowMidi: 40, highMidi: 64 });
         log('one-octave C pool is 8 notes', pool.length === 8, pool.join(','));
-        const upFour = seq.buildSequence(pool, { length: 4, jump: 1, perm: [0, 1, 2, 3], direction: 'up' });
-        log('1234 pattern head', upFour.slice(0, 5).join(',') === [pool[0], pool[1], pool[2], pool[3], pool[1]].join(','), upFour.slice(0, 8).join(','));
-        const thirds = seq.buildSequence(pool, { length: 2, jump: 2, perm: [0, 1], direction: 'up' });
-        log('thirds step 2 degrees', thirds[1] === pool[2] && thirds[2] === pool[1]);
-        log('perm count for 4 = 24', seq.permutations(4).length === 24);
-        log('perm label', seq.permutationLabel([0, 2, 1, 3]) === '1324');
+        log('the pool climbs from the root to its octave',
+          pool.every((m, i, a) => i === 0 || m > a[i - 1]) && pool[7] - pool[0] === 12,
+          pool.join(','));
+        log('the pool stays inside the instrument range',
+          seq.notePool({ rootPc: 0, intervals: [0, 4, 7], lowMidi: 40, highMidi: 52 })
+            .every((m) => m >= 40 && m <= 52));
 
         /* ---------------- metronome ---------------- */
         log('4/4 counts four beats', seq.findMeter('4/4').beats === 4);
@@ -228,14 +225,6 @@
         st = S.reducer(base, { type: 'setIntervals', semitones: [7, 0, 3] });
         log('setIntervals sorts', st.customIntervals.join(',') === '0,3,7');
 
-        st = S.reducer(base, { type: 'setStrings', on: [0, 1], total: 6 });
-        log('setStrings stores the complement', st.stringsOff.join(',') === '2,3,4,5', st.stringsOff.join(','));
-        st = S.reducer(base, { type: 'setStrings', on: [0, 1, 2, 3, 4, 5], total: 6 });
-        log('all strings on means none muted', st.stringsOff.length === 0);
-
-        st = S.reducer(base, { type: 'selectChord', id: 'maj7' });
-        log('selectChord switches mode', st.mode === 'chords' && st.chordId === 'maj7');
-
         log('the board starts on guitar', base.board === 'guitar' && base.keyCount === 61);
         st = S.reducer(base, { type: 'setBoard', board: 'piano' });
         log('setBoard switches instrument', st.board === 'piano');
@@ -243,17 +232,11 @@
         log('setKeyCount keeps the piano selected', st.board === 'piano' && st.keyCount === 88);
         st = S.reducer(base, { type: 'clamp', field: 'tempo', delta: -1000, min: 30, max: 300 });
         log('tempo clamps at 30', st.tempo === 30);
-        st = S.reducer({ ...base, notesPerBeat: 4 }, { type: 'cycle', field: 'notesPerBeat', values: [1, 2, 3, 4] });
-        log('cycle wraps', st.notesPerBeat === 1);
-        st = S.reducer({ ...base, groupLength: 3, permIndex: 5 }, { type: 'cycle', field: 'groupLength', values: [1, 2, 3, 4] });
-        log('changing group resets permutation', st.permIndex === 0);
-        st = S.reducer({ ...base, transpose: 3, stringsOff: [1], extraStrings: 2 }, { type: 'setTuning', id: 'bass-4' });
-        log('changing tuning clears transpose, mutes and extra strings',
-          st.transpose === 0 && st.stringsOff.length === 0 && st.extraStrings === 0);
+        st = S.reducer({ ...base, transpose: 3, extraStrings: 2 }, { type: 'setTuning', id: 'bass-4' });
+        log('changing tuning clears transpose and extra strings',
+          st.transpose === 0 && st.extraStrings === 0);
 
-        st = S.reducer({ ...base, stringsOff: [1], painted: { '0:3': '#fff' } }, { type: 'setExtraStrings', extra: 1 });
-        log('adding a string clears mutes and marks',
-          st.extraStrings === 1 && st.stringsOff.length === 0 && Object.keys(st.painted).length === 0);
+        st = S.reducer(base, { type: 'setExtraStrings', extra: 1 });
         log('adding a string grows the board', S.stringCount(st) === 7, String(S.stringCount(st)));
         st = S.reducer(base, { type: 'setExtraStrings', extra: 5 });
         log('extra strings stop at eight total', S.stringCount(st) === 8, String(S.stringCount(st)));
@@ -272,9 +255,7 @@
           leftHanded: false,
           flats: false,
           showDegrees: false,
-          stringEnabled: [true, true, true, true],
           pitches: new Map([[0, { degree: 0, semitones: 0 }]]),
-          painted: {},
           spotlight: null,
         };
         createRoot(probe).render(
@@ -451,45 +432,19 @@
         for (const s of theory.ALL_SCALES) if (countFor({ scaleId: s.id }) > 0) ok += 1;
         log('every scale yields notes', ok === 40, `${ok}/40`);
         ok = 0;
-        for (const c of theory.ALL_CHORDS) if (countFor({ mode: 'chords', chordId: c.id }) > 0) ok += 1;
-        log('every chord yields notes', ok === 20, `${ok}/20`);
-        ok = 0;
         for (const t of theory.ALL_TUNINGS) if (countFor({ tuningId: t.id }) > 0) ok += 1;
         log('every tuning yields notes', ok === 25, `${ok}/25`);
 
-        /* ---------------- persistence ---------------- */
-        S.saveState({ ...S.initialState, tempo: 145, persist: { ...S.initialState.persist, tempo: true } });
-        log('opted-in field persists', S.loadState().tempo === 145);
-        S.saveState({ ...S.initialState, tempo: 145 });
-        log('opted-out field does not persist', S.loadState().tempo === undefined);
-        S.saveState({ ...S.initialState, direction: 'downup', persist: { ...S.initialState.persist, direction: true } });
-        log('opted-in direction persists', S.loadState().direction === 'downup', S.loadState().direction);
-        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({ persist: { direction: true }, direction: 'sideways' }));
-        log('unknown direction falls back to up', S.loadState().direction === 'up', S.loadState().direction);
-        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({ defaults: { instrument: 'gone', root: 0, scale: 'gone' } }));
-        const stale = S.loadState();
-        log('unknown tuning and scale fall back', stale.tuningId === 'standard' && stale.scaleId === 'ionian',
-          `${stale.tuningId} / ${stale.scaleId}`);
-
-        S.saveState({
-          ...S.initialState,
-          meter: '7/8 (2+2+3)',
-          clickSound: 'cowbell',
-          persist: { ...S.initialState.persist, meter: true, clickSound: true },
-        });
-        const kept = S.loadState();
-        log('opted-in metronome settings persist',
-          kept.meter === '7/8 (2+2+3)' && kept.clickSound === 'cowbell',
-          `${kept.meter} / ${kept.clickSound}`);
-        localStorage.setItem(S.STORAGE_KEY, JSON.stringify({
-          persist: { meter: true, rhythm: true, clickSound: true },
-          meter: '9/16', rhythm: '1/32', clickSound: 'gong',
-        }));
-        const junk = S.loadState();
-        log('unknown metronome settings fall back',
-          junk.meter === '4/4' && junk.rhythm === '1/4' && junk.clickSound === 'blip',
-          `${junk.meter} / ${junk.rhythm} / ${junk.clickSound}`);
-        localStorage.clear();
+        /* ---------------- unreachable state stays gone ---------------- */
+        log('the reducer ignores actions it no longer handles',
+          S.reducer(base, { type: 'selectChord', id: 'maj7' }) === base &&
+          S.reducer(base, { type: 'setPaintColor', color: '#fff' }) === base &&
+          S.reducer(base, { type: 'setStrings', on: [0], total: 6 }) === base);
+        log('no frozen pattern or paint fields remain in state',
+          ['mode', 'chordId', 'painted', 'paintColor', 'stringsOff', 'direction',
+            'groupLength', 'jump', 'permIndex', 'countIn', 'notesPerBeat', 'octaves',
+            'persist', 'defaults'].every((k) => !(k in S.initialState)),
+          Object.keys(S.initialState).join(' '));
       } catch (error) {
         log('uncaught error', false, `${error && error.message} | ${error && error.stack}`);
       }

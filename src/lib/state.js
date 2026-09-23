@@ -1,57 +1,12 @@
 /**
- * Application state: initial values, reducer, derived selectors and storage.
+ * Application state: initial values, reducer and derived selectors.
  */
 
-import {
-  CHORD_VOICING,
-  MAX_STRINGS,
-  extendedTuningMidi,
-  findChord,
-  findScale,
-  findTuning,
-} from './theory.js';
-import { CLICK_RHYTHMS, METERS } from './sequencer.js';
-import { CLICK_SOUNDS } from './audio.js';
-
-export const STORAGE_KEY = 'freetboard.react.v1';
-
-export const DIRECTIONS = [
-  ['up', 'Up'],
-  ['down', 'Down'],
-  ['updown', 'Up-Down'],
-  ['downup', 'Down-Up'],
-  ['random', 'Random'],
-];
-
-/** Fields the user can opt into carrying across reloads. */
-export const PERSIST_FIELDS = [
-  ['tempo', 'Tempo'],
-  ['countIn', 'Count-in'],
-  ['loop', 'Loop'],
-  ['notesPerBeat', 'Notes per beat'],
-  ['octaves', 'Octave range'],
-  ['direction', 'Direction'],
-  ['groupLength', 'Group length'],
-  ['jump', 'Degree step'],
-  ['permIndex', 'Permutation'],
-  ['leftHanded', 'Left-handed'],
-  ['tuningId', 'Alternate tuning'],
-  ['transpose', 'Tuning offset'],
-  ['fretCount', 'Fret count'],
-  ['flats', 'Sharps / flats'],
-  ['showDegrees', 'Note / degree'],
-  ['meter', 'Time signature'],
-  ['rhythm', 'Click rhythm'],
-  ['clickSound', 'Click sound'],
-  ['clickVolumeDb', 'Click volume'],
-  ['clickPan', 'Click pan'],
-];
+import { MAX_STRINGS, extendedTuningMidi, findScale, findTuning } from './theory.js';
 
 export const initialState = {
   board: 'guitar',
-  mode: 'scales',
   scaleId: 'ionian',
-  chordId: 'major',
   useCustom: false,
   customIntervals: [0, 2, 4, 5, 7, 9, 11],
   rootPc: 0,
@@ -63,36 +18,20 @@ export const initialState = {
   leftHanded: false,
   flats: false,
   showDegrees: false,
-  stringsOff: [],
-  painted: {},
-  paintColor: null,
   spotlight: null,
   tempo: 90,
-  notesPerBeat: 2,
-  octaves: 1,
-  direction: 'up',
-  groupLength: 1,
-  jump: 1,
-  permIndex: 0,
   loop: false,
-  countIn: false,
   metronome: false,
   meter: '4/4',
   rhythm: '1/4',
   clickSound: 'blip',
   clickVolumeDb: 0,
-  clickPan: 0,
-  defaults: { instrument: 'standard', root: 0, scale: 'ionian' },
-  persist: Object.fromEntries(PERSIST_FIELDS.map(([key]) => [key, false])),
 };
 
 export function reducer(state, action) {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.patch };
-
-    case 'setMode':
-      return { ...state, mode: action.mode, useCustom: false };
 
     case 'setBoard':
       return { ...state, board: action.board };
@@ -101,10 +40,7 @@ export function reducer(state, action) {
       return { ...state, keyCount: action.count };
 
     case 'selectScale':
-      return { ...state, mode: 'scales', scaleId: action.id, useCustom: false };
-
-    case 'selectChord':
-      return { ...state, mode: 'chords', chordId: action.id, useCustom: false };
+      return { ...state, scaleId: action.id, useCustom: false };
 
     case 'enableCustom':
       return { ...state, useCustom: true, customIntervals: selectionIntervals(state) };
@@ -120,58 +56,20 @@ export function reducer(state, action) {
     }
 
     case 'setRoot':
-      return { ...state, rootPc: action.pc, painted: {}, spotlight: null };
+      return { ...state, rootPc: action.pc, spotlight: null };
 
     case 'setTuning':
-      return {
-        ...state,
-        tuningId: action.id,
-        extraStrings: 0,
-        transpose: 0,
-        stringsOff: [],
-        painted: {},
-      };
+      return { ...state, tuningId: action.id, extraStrings: 0, transpose: 0 };
 
-    // Extra strings shift every string index, so mutes and marks can't carry over.
     case 'setExtraStrings': {
       const base = findTuning(state.tuningId)?.notes.length ?? 6;
       const extra = Math.min(Math.max(0, action.extra), Math.max(0, MAX_STRINGS - base));
       if (extra === state.extraStrings) return state;
-      return { ...state, extraStrings: extra, stringsOff: [], painted: {} };
+      return { ...state, extraStrings: extra };
     }
-
-    case 'setStrings': {
-      const on = new Set(action.on);
-      const off = Array.from({ length: action.total }, (_, i) => i).filter((i) => !on.has(i));
-      return { ...state, stringsOff: off };
-    }
-
-    case 'clearStrings':
-      return { ...state, stringsOff: [] };
-
-    case 'setPaintColor':
-      return { ...state, paintColor: state.paintColor === action.color ? null : action.color };
-
-    case 'paint': {
-      const painted = { ...state.painted };
-      if (painted[action.key] === action.color) delete painted[action.key];
-      else painted[action.key] = action.color;
-      return { ...state, painted };
-    }
-
-    case 'clearPaint':
-      return { ...state, painted: {}, spotlight: null, paintColor: null };
 
     case 'toggleSpotlight':
       return { ...state, spotlight: state.spotlight === action.pc ? null : action.pc };
-
-    case 'cycle': {
-      const { field, values } = action;
-      const value = values[(values.indexOf(state[field]) + 1) % values.length];
-      const patch = { [field]: value };
-      if (field === 'groupLength') patch.permIndex = 0;
-      return { ...state, ...patch };
-    }
 
     case 'clamp': {
       const { field, delta, min, max } = action;
@@ -180,12 +78,6 @@ export function reducer(state, action) {
 
     case 'toggle':
       return { ...state, [action.field]: !state[action.field] };
-
-    case 'setDefault':
-      return { ...state, defaults: { ...state.defaults, [action.field]: action.value } };
-
-    case 'setPersist':
-      return { ...state, persist: { ...state.persist, [action.field]: action.value } };
 
     default:
       return state;
@@ -205,28 +97,15 @@ export const stringCount = (state) => openStrings(state).length;
 export const extraStringsAllowed = (state) =>
   Math.max(0, MAX_STRINGS - currentTuning(state).notes.length);
 
-export const stringEnabled = (state) =>
-  Array.from({ length: stringCount(state) }, (_, i) => !state.stringsOff.includes(i));
-
 export function selectionIntervals(state) {
   if (state.useCustom) {
     return state.customIntervals.length ? [...state.customIntervals].sort((a, b) => a - b) : [0];
   }
-  if (state.mode === 'chords') return findChord(state.chordId).intervals;
   return findScale(state.scaleId).intervals;
 }
 
-export function playbackIntervals(state) {
-  if (!state.useCustom && state.mode === 'chords') {
-    return CHORD_VOICING[state.chordId] ?? findChord(state.chordId).intervals;
-  }
-  return selectionIntervals(state);
-}
-
-export function selectionName(state) {
-  if (state.useCustom) return 'Custom';
-  return state.mode === 'chords' ? findChord(state.chordId).name : findScale(state.scaleId).name;
-}
+export const selectionName = (state) =>
+  state.useCustom ? 'Custom' : findScale(state.scaleId).name;
 
 /** pitch class -> { degree, semitones } */
 export function pitchMap(state) {
@@ -237,67 +116,13 @@ export function pitchMap(state) {
   return map;
 }
 
-/** Playable positions for a pitch, best (enabled string, lowest fret) first. */
+/** Playable positions for a pitch, lowest fret first. */
 export function positionsFor(state, midi) {
-  const strings = openStrings(state);
-  const enabled = stringEnabled(state);
   const found = [];
-  strings.forEach((open, i) => {
+  openStrings(state).forEach((open, i) => {
     const fret = midi - open;
-    if (fret >= 0 && fret <= state.fretCount) found.push({ string: i, fret, enabled: enabled[i] });
+    if (fret >= 0 && fret <= state.fretCount) found.push({ string: i, fret });
   });
-  found.sort(
-    (a, b) => Number(b.enabled) - Number(a.enabled) || a.fret - b.fret || b.string - a.string,
-  );
+  found.sort((a, b) => a.fret - b.fret || b.string - a.string);
   return found;
-}
-
-/* ----------------------------------------------------------------- storage */
-
-export function saveState(state) {
-  const payload = { defaults: state.defaults, persist: state.persist };
-  for (const [key] of PERSIST_FIELDS) {
-    if (state.persist[key]) payload[key] = state[key];
-  }
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    /* private browsing */
-  }
-}
-
-export function loadState() {
-  let payload;
-  try {
-    payload = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-  } catch {
-    payload = null;
-  }
-  if (!payload) return null;
-
-  const defaults = { ...initialState.defaults, ...(payload.defaults || {}) };
-  const persist = { ...initialState.persist, ...(payload.persist || {}) };
-  const patch = {
-    defaults,
-    persist,
-    tuningId: defaults.instrument,
-    rootPc: defaults.root,
-    scaleId: defaults.scale,
-  };
-  for (const [key] of PERSIST_FIELDS) {
-    if (persist[key] && payload[key] !== undefined) patch[key] = payload[key];
-  }
-  if (!findTuning(patch.tuningId)) patch.tuningId = 'standard';
-  if (!findScale(patch.scaleId)) patch.scaleId = 'ionian';
-  // The transport labels its button by looking this id up, so it has to resolve.
-  if (patch.direction && !DIRECTIONS.some(([id]) => id === patch.direction)) patch.direction = 'up';
-  // Same for the metronome's list-backed settings.
-  if (patch.meter && !METERS.some((m) => m.id === patch.meter)) patch.meter = initialState.meter;
-  if (patch.rhythm && !CLICK_RHYTHMS.some(([id]) => id === patch.rhythm)) {
-    patch.rhythm = initialState.rhythm;
-  }
-  if (patch.clickSound && !CLICK_SOUNDS.some(([id]) => id === patch.clickSound)) {
-    patch.clickSound = initialState.clickSound;
-  }
-  return patch;
 }

@@ -63,7 +63,7 @@ export const Fretboard = forwardRef(function Fretboard(
   { view, flash, onSelect, onSpotlight },
   ref,
 ) {
-  const { strings, fretCount, leftHanded, flats, showDegrees, stringEnabled } = view;
+  const { strings, fretCount, leftHanded, flats, showDegrees } = view;
   const stringCount = strings.length;
 
   const L = useMemo(
@@ -86,16 +86,15 @@ export const Fretboard = forwardRef(function Fretboard(
           midi,
           cx: L.mirror(fret === 0 ? L.openX : L.fretCentre(fret)),
           cy: L.stringY(i),
-          fill: view.painted[key] || NOTE_COLOR,
+          fill: NOTE_COLOR,
           label: showDegrees ? DEGREE_LABEL[entry.semitones] : noteName(midi, flats),
           isRoot: entry.semitones === 0,
-          dimmed:
-            !stringEnabled[i] || (view.spotlight !== null && view.spotlight !== pitchClass(midi)),
+          dimmed: view.spotlight !== null && view.spotlight !== pitchClass(midi),
         });
       }
     }
     return out;
-  }, [L, strings, stringCount, fretCount, flats, showDegrees, stringEnabled, view.pitches, view.painted, view.spotlight]);
+  }, [L, strings, stringCount, fretCount, flats, showDegrees, view.pitches, view.spotlight]);
 
   const boardX = L.mirror(L.boardLeft) - (leftHanded ? L.boardWidth : 0);
 
@@ -168,7 +167,6 @@ export const Fretboard = forwardRef(function Fretboard(
 
       {strings.map((open, i) => {
         const y = L.stringY(i);
-        const enabled = stringEnabled[i];
         return (
           <g key={`string-${i}`}>
             <line
@@ -176,14 +174,14 @@ export const Fretboard = forwardRef(function Fretboard(
               y1={y}
               x2={L.mirror(L.boardLeft + L.boardWidth)}
               y2={y}
-              stroke={enabled ? COLORS.string : COLORS.muted}
+              stroke={COLORS.string}
               strokeWidth={L.stringWidth(i)}
-              opacity={enabled ? 0.85 : 0.4}
+              opacity={0.85}
             />
             <text
               x={L.mirror(L.labelX)}
               y={y}
-              fill={enabled ? COLORS.openLabel : COLORS.muted}
+              fill={COLORS.openLabel}
               fontFamily={FONT}
               fontSize={13}
               fontWeight={600}

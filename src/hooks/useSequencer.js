@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audio } from '../lib/audio.js';
-import { Sequencer, buildSequence, notePool, permutations } from '../lib/sequencer.js';
+import { Sequencer, notePool } from '../lib/sequencer.js';
 import { keyRangeMidi } from '../lib/theory.js';
-import { openStrings, playbackIntervals } from '../lib/state.js';
+import { openStrings, selectionIntervals } from '../lib/state.js';
 
 /**
  * Owns the Sequencer instance and keeps it in sync with state.
@@ -18,9 +18,6 @@ export function useSequencer(state, onNote) {
   const noteHandler = useRef(onNote);
   noteHandler.current = onNote;
 
-  const permutationList = useMemo(() => permutations(state.groupLength), [state.groupLength]);
-  const permutation = permutationList[Math.min(state.permIndex, permutationList.length - 1)];
-
   const notes = useMemo(() => {
     /* The keyboard's range is its key count; the fretboard's is its tuning. */
     const range = () => {
@@ -32,25 +29,16 @@ export function useSequencer(state, onNote) {
       };
     };
     const { lowMidi, highMidi } = range();
-    const pool = notePool({
+    return notePool({
       rootPc: state.rootPc,
-      intervals: playbackIntervals(state),
+      intervals: selectionIntervals(state),
       lowMidi,
       highMidi,
-      octaves: state.octaves,
-    });
-    return buildSequence(pool, {
-      length: state.groupLength,
-      jump: state.jump,
-      perm: permutation,
-      direction: state.direction,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.rootPc,
-    state.mode,
     state.scaleId,
-    state.chordId,
     state.useCustom,
     state.customIntervals,
     state.tuningId,
@@ -59,11 +47,6 @@ export function useSequencer(state, onNote) {
     state.fretCount,
     state.board,
     state.keyCount,
-    state.octaves,
-    state.groupLength,
-    state.jump,
-    state.direction,
-    permutation,
   ]);
 
   useEffect(() => {
@@ -76,20 +59,10 @@ export function useSequencer(state, onNote) {
     const engine = sequencer.current;
     engine.setNotes(notes);
     engine.tempo = state.tempo;
-    engine.notesPerBeat = state.notesPerBeat;
     engine.loop = state.loop;
-    engine.countIn = state.countIn;
     engine.metronome = state.metronome;
     engine.clickSound = state.clickSound;
-  }, [
-    notes,
-    state.tempo,
-    state.notesPerBeat,
-    state.loop,
-    state.countIn,
-    state.metronome,
-    state.clickSound,
-  ]);
+  }, [notes, state.tempo, state.loop, state.metronome, state.clickSound]);
 
   useEffect(() => () => sequencer.current?.stop(), []);
 
@@ -100,5 +73,5 @@ export function useSequencer(state, onNote) {
     setIsPlaying(engine.playing);
   }, []);
 
-  return { notes, permutation, permutationCount: permutationList.length, isPlaying, toggle };
+  return { isPlaying, toggle };
 }

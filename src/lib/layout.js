@@ -5,10 +5,8 @@
  * testing and PNG export.
  */
 
-/** Every note in the selection uses one colour; painted notes override it. */
+/** Every note in the selection uses one colour. */
 export const NOTE_COLOR = '#000000';
-
-export const PAINT_COLORS = ['#ffffff', '#ff5b5b', '#ffb300', '#5ad469', '#38a3ff', '#b46bff'];
 
 export const FONT = 'ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 

@@ -47,8 +47,8 @@ export function TempoCluster({ state, dispatch, isPlaying }) {
   }, [meter, subdivision, state.clickSound]);
 
   useEffect(() => {
-    audio.setClickMix({ gainDb: state.clickVolumeDb, pan: state.clickPan });
-  }, [state.clickVolumeDb, state.clickPan]);
+    audio.setClickMix({ gainDb: state.clickVolumeDb });
+  }, [state.clickVolumeDb]);
 
   useEffect(() => {
     // Don't let the standalone click and the sequencer's own metronome clash.

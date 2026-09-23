@@ -77,13 +77,12 @@ export const Keyboard = forwardRef(function Keyboard(
     for (const key of L.keys) {
       const entry = view.pitches.get(pitchClass(key.midi));
       if (!entry) continue;
-      const id = `k:${key.midi}`;
       map.set(key.midi, {
-        key: id,
+        key: `k:${key.midi}`,
         midi: key.midi,
         cx: key.cx,
         cy: key.cy,
-        fill: view.painted[id] || NOTE_COLOR,
+        fill: NOTE_COLOR,
         label: showDegrees ? DEGREE_LABEL[entry.semitones] : noteName(key.midi, flats),
         isRoot: entry.semitones === 0,
         onBlackKey: key.black,
@@ -91,7 +90,7 @@ export const Keyboard = forwardRef(function Keyboard(
       });
     }
     return map;
-  }, [L, view.pitches, view.painted, view.spotlight, flats, showDegrees]);
+  }, [L, view.pitches, view.spotlight, flats, showDegrees]);
 
   /** Handlers for a key rect, or nothing when the key is out of the selection. */
   const keyHandlers = (midi) => {

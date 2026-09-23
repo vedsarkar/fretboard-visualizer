@@ -8,16 +8,13 @@ import { audio } from '@/lib/audio.js';
 import {
   extraStringsAllowed,
   initialState,
-  loadState,
   openStrings,
   pitchMap,
   positionsFor,
   reducer,
-  saveState,
   selectionIntervals,
   selectionName,
   stringCount,
-  stringEnabled,
 } from '@/lib/state.js';
 import { useSequencer } from '@/hooks/useSequencer.js';
 import { Fretboard } from './components/Fretboard.jsx';
@@ -29,18 +26,11 @@ import { Hint } from './components/Ui.jsx';
 
 const NO_FLASH = { key: '', id: 0 };
 
-/** Saved settings are folded in before the first render, not after. */
-const restore = (base) => ({ ...base, ...(loadState() || {}) });
-
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState, restore);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const [flash, setFlash] = useState(NO_FLASH);
   const svgRef = useRef(null);
   const flashId = useRef(0);
-
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
 
   /* ---- derived, memoised so playback highlights stay cheap ---- */
   const strings = useMemo(
@@ -49,19 +39,12 @@ export default function App() {
   );
   const totalStrings = useMemo(() => stringCount(state), [state.tuningId, state.extraStrings]);
   const extraAllowed = useMemo(() => extraStringsAllowed(state), [state.tuningId]);
-  const enabled = useMemo(
-    () => stringEnabled(state),
-    [state.tuningId, state.extraStrings, state.stringsOff],
-  );
   const intervals = useMemo(
     () => selectionIntervals(state),
-    [state.mode, state.scaleId, state.chordId, state.useCustom, state.customIntervals],
+    [state.scaleId, state.useCustom, state.customIntervals],
   );
   const pitches = useMemo(() => pitchMap(state), [state.rootPc, intervals]);
-  const name = useMemo(
-    () => selectionName(state),
-    [state.mode, state.scaleId, state.chordId, state.useCustom],
-  );
+  const name = useMemo(() => selectionName(state), [state.scaleId, state.useCustom]);
 
   const view = useMemo(
     () => ({
@@ -70,9 +53,7 @@ export default function App() {
       leftHanded: state.leftHanded,
       flats: state.flats,
       showDegrees: state.showDegrees,
-      stringEnabled: enabled,
       pitches,
-      painted: state.painted,
       spotlight: state.spotlight,
     }),
     [
@@ -81,9 +62,7 @@ export default function App() {
       state.leftHanded,
       state.flats,
       state.showDegrees,
-      enabled,
       pitches,
-      state.painted,
       state.spotlight,
     ],
   );
@@ -94,10 +73,9 @@ export default function App() {
       flats: state.flats,
       showDegrees: state.showDegrees,
       pitches,
-      painted: state.painted,
       spotlight: state.spotlight,
     }),
-    [state.keyCount, state.flats, state.showDegrees, pitches, state.painted, state.spotlight],
+    [state.keyCount, state.flats, state.showDegrees, pitches, state.spotlight],
   );
 
   const highlight = useCallback((key) => {
@@ -118,17 +96,14 @@ export default function App() {
     [state, highlight],
   );
 
-  const { notes, isPlaying, toggle } = useSequencer(state, onPlayedNote);
+  const { isPlaying, toggle } = useSequencer(state, onPlayedNote);
 
   const onSelect = useCallback(
     (note) => {
-      if (state.paintColor) {
-        dispatch({ type: 'paint', key: note.key, color: state.paintColor });
-      }
       audio.play(note.midi, 0, 0.7);
       highlight(note.key);
     },
-    [state.paintColor, highlight],
+    [highlight],
   );
 
   const onSpotlight = useCallback((note) => {

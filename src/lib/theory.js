@@ -1,5 +1,5 @@
 /**
- * Pitch, scale, chord and instrument-tuning data.
+ * Pitch, scale and instrument-tuning data.
  * Pitch classes are 0..11 starting at C. MIDI numbers use C4 = 60.
  */
 
@@ -125,52 +125,6 @@ export const SCALE_GROUPS = [
   },
 ];
 
-/* ------------------------------------------------------------------ chords */
-
-export const CHORD_GROUPS = [
-  {
-    id: 'common',
-    label: null,
-    chords: [
-      { id: 'major', name: 'Major', intervals: [0, 4, 7] },
-      { id: 'minor', name: 'Minor', intervals: [0, 3, 7] },
-      { id: 'dim', name: 'Dim', intervals: [0, 3, 6] },
-      { id: 'aug', name: 'Aug', intervals: [0, 4, 8] },
-      { id: 'maj7', name: 'Maj7', intervals: [0, 4, 7, 11] },
-      { id: 'min7', name: 'Min7', intervals: [0, 3, 7, 10] },
-      { id: 'dom7', name: '7', intervals: [0, 4, 7, 10] },
-      { id: 'm7b5', name: 'm7b5', intervals: [0, 3, 6, 10] },
-      { id: 'dim7', name: 'Dim7', intervals: [0, 3, 6, 9] },
-    ],
-  },
-  {
-    id: 'extended',
-    label: 'More',
-    chords: [
-      { id: '9', name: '9', intervals: [0, 2, 4, 7, 10] },
-      { id: 'maj9', name: 'Maj9', intervals: [0, 2, 4, 7, 11] },
-      { id: 'min9', name: 'Min9', intervals: [0, 2, 3, 7, 10] },
-      { id: '7sharp5', name: '7#5', intervals: [0, 4, 8, 10] },
-      { id: '7flat5', name: '7b5', intervals: [0, 4, 6, 10] },
-      { id: '7sharp9', name: '7#9', intervals: [0, 3, 4, 7, 10] },
-      { id: '7flat9', name: '7b9', intervals: [0, 1, 4, 7, 10] },
-      { id: 'aug7', name: 'Aug7', intervals: [0, 4, 8, 11] },
-      { id: 'sus2', name: 'Sus2', intervals: [0, 2, 7] },
-      { id: 'sus4', name: 'Sus4', intervals: [0, 5, 7] },
-      { id: '7sus4', name: '7Sus4', intervals: [0, 5, 7, 10] },
-    ],
-  },
-];
-
-/** Voicing spread used when the sequencer arpeggiates an extended chord. */
-export const CHORD_VOICING = {
-  '9': [0, 4, 7, 10, 14],
-  maj9: [0, 4, 7, 11, 14],
-  min9: [0, 3, 7, 10, 14],
-  '7sharp9': [0, 4, 7, 10, 15],
-  '7flat9': [0, 4, 7, 10, 13],
-};
-
 /* --------------------------------------------------------------- tunings */
 
 const tuning = (id, name, notes) => ({ id, name, notes: notes.split('-') });
@@ -241,11 +195,9 @@ export const INSTRUMENT_GROUPS = [
 
 export const ALL_TUNINGS = INSTRUMENT_GROUPS.flatMap((g) => g.tunings);
 export const ALL_SCALES = SCALE_GROUPS.flatMap((g) => g.scales);
-export const ALL_CHORDS = CHORD_GROUPS.flatMap((g) => g.chords);
 
 export const findTuning = (id) => ALL_TUNINGS.find((t) => t.id === id);
 export const findScale = (id) => ALL_SCALES.find((s) => s.id === id);
-export const findChord = (id) => ALL_CHORDS.find((c) => c.id === id);
 
 /** MIDI number of every open string, lowest string position first. */
 export const tuningMidi = (t, transpose = 0) => t.notes.map((n) => nameToMidi(n) + transpose);
